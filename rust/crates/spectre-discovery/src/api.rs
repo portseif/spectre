@@ -81,11 +81,6 @@ struct AttestParams {
 }
 
 #[derive(Deserialize)]
-struct DomainParams {
-    domain: String,
-}
-
-#[derive(Deserialize)]
 struct BreachLookupParams {
     email: String,
     #[serde(default)]
@@ -222,15 +217,13 @@ impl Engine {
 
             "verification.list" => {
                 let storage = self.storage();
-                Ok(json!({ "emails": storage.list_emails().await?, "domains": storage.list_domains().await? }))
+                Ok(json!({ "emails": storage.list_emails().await? }))
             }
             "verification.email.attest" => {
                 let request: AttestParams = params(parameters)?;
                 to_value(self.attest_email(&request.email, &request.statement).await?)
             }
             "verification.email.revoke" => to_value(self.revoke_email(&params::<EmailParams>(parameters)?.email).await?),
-            "verification.domain.start" => to_value(self.start_domain_verification(&params::<DomainParams>(parameters)?.domain).await?),
-            "verification.domain.check" => to_value(self.check_domain_verification(&params::<DomainParams>(parameters)?.domain).await?),
 
             "breach.lookup" => {
                 let request: BreachLookupParams = params(parameters)?;

@@ -57,12 +57,13 @@ fn client(server: &MockServer) -> HibpClient {
 
 #[test]
 fn unverified_addresses_cannot_be_authorized() {
-    for status in [VerificationStatus::Unverified, VerificationStatus::PubliclyObserved, VerificationStatus::OwnershipPending] {
+    for status in [VerificationStatus::Unverified, VerificationStatus::PubliclyObserved] {
         let error = AuthorizedAccount::from_record(&record(status, None)).unwrap_err();
         assert_eq!(error.code, ErrorCode::AuthorizationRequired);
     }
     let authorized =
-        AuthorizedAccount::from_record(&record(VerificationStatus::OwnershipVerified, Some(VerificationMethod::DnsTxtChallenge))).unwrap();
+        AuthorizedAccount::from_record(&record(VerificationStatus::OwnershipVerified, Some(VerificationMethod::InvestigatorAttestation)))
+            .unwrap();
     assert_eq!(authorized.email(), "owner@example.org");
 }
 
@@ -119,7 +120,8 @@ async fn account_lookup_status_mapping() {
         .mount(&server)
         .await;
     let account =
-        AuthorizedAccount::from_record(&record(VerificationStatus::OwnershipVerified, Some(VerificationMethod::DnsTxtChallenge))).unwrap();
+        AuthorizedAccount::from_record(&record(VerificationStatus::OwnershipVerified, Some(VerificationMethod::InvestigatorAttestation)))
+            .unwrap();
     let context = context();
     context.credentials.set(ids::HIBP_API_KEY, Zeroizing::new("k".into()));
     assert!(client(&server).account_breaches(&context, &account).await.unwrap().is_empty(), "404 means not pwned");

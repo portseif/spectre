@@ -205,13 +205,6 @@ final class RustEngine: EngineClient, Sendable {
         try await call("verification.email.revoke", ["email": .string(email)])
     }
 
-    func startDomainVerification(_ domain: String) async throws -> DomainRecord {
-        try await call("verification.domain.start", ["domain": .string(domain)])
-    }
-
-    func checkDomainVerification(_ domain: String) async throws -> DomainCheckResult {
-        try await call("verification.domain.check", ["domain": .string(domain)])
-    }
 
     func lookupBreaches(email: String, investigationID: UUID?) async throws -> BreachExposureReport {
         try await call("breach.lookup", ["email": .string(email), "investigation_id": investigationID.map(Self.id) ?? .null])

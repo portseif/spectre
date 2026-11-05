@@ -52,8 +52,6 @@ pub struct CorrelationContext {
     pub decisions: HashMap<(Uuid, Uuid), InvestigatorDecision>,
     /// Ownership-verified email addresses (normalized).
     pub verified_emails: HashSet<String>,
-    /// Ownership-verified domains (normalized).
-    pub verified_domains: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -178,11 +176,7 @@ struct GraphBuilder<'a> {
 impl<'a> GraphBuilder<'a> {
     fn node(&mut self, kind: IdentityKind, value: &str, label: String, platform: Option<String>, finding_id: Option<Uuid>) -> Uuid {
         let id = identity_id(self.investigation_id, kind, value);
-        let verified = match kind {
-            IdentityKind::Email => self.context.verified_emails.contains(value),
-            IdentityKind::Domain => self.context.verified_domains.contains(value),
-            _ => false,
-        };
+        let verified = kind == IdentityKind::Email && self.context.verified_emails.contains(value);
         self.nodes.entry(id).or_insert(Identity {
             id,
             kind,

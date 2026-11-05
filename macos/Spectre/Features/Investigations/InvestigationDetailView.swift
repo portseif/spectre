@@ -322,7 +322,7 @@ private struct BreachExposureTab: View {
             } header: {
                 Text("Addresses")
             } footer: {
-                Text("Account-specific breach data is only requested for ownership-verified addresses (DNS challenge or recorded attestation).")
+                Text("Account-specific breach data is only requested for addresses whose ownership you have attested.")
             }
             if let errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)

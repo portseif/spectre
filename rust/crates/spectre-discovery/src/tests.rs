@@ -11,7 +11,7 @@ use spectre_core::error::{ErrorCode, SpectreError, SpectreResult};
 use spectre_core::model::*;
 use spectre_core::provider::{FindingDraft, OsintProvider, ProviderCapability, ProviderContext};
 use spectre_core::target::{InvestigationTarget, TargetType};
-use wiremock::matchers::{method, path, query_param};
+use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use super::*;
@@ -362,41 +362,6 @@ async fn breach_lookups_require_verified_ownership() {
     assert!(audit.iter().any(|event| event.event_type == "breach_lookup"));
     assert!(audit.iter().any(|event| event.event_type == "email_ownership_attested"));
     assert!(!serde_json::to_string(&audit).unwrap().contains("\"k\""), "API keys never reach the audit log");
-}
-
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn domain_verification_uses_dns_txt_challenge() {
-    let server = MockServer::start().await;
-    let engine_server = server.uri();
-    let doh = url::Url::parse(&format!("{engine_server}/dns-query")).unwrap();
-    let engine = engine_with(vec![Arc::new(MockProvider::new("works", 1, Outcome::Hang))], |config| config.doh_endpoint = Some(doh)).await;
-    engine.storage().ensure_email("staff@corp.example.net").await.unwrap();
-
-    let record = engine.start_domain_verification("corp.example.net").await.unwrap();
-    let challenge = record.challenge_value.clone().unwrap();
-    assert!(challenge.starts_with("spectre-verify="));
-    assert_eq!(record.challenge_record_name.as_deref(), Some("_spectre-challenge.corp.example.net"));
-
-    Mock::given(method("GET"))
-        .and(path("/dns-query"))
-        .and(query_param("name", "_spectre-challenge.corp.example.net"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"Status": 0, "Answer": []})))
-        .up_to_n_times(1)
-        .mount(&server)
-        .await;
-    let pending = engine.check_domain_verification("corp.example.net").await.unwrap();
-    assert!(!pending.verified);
-
-    Mock::given(method("GET"))
-        .and(path("/dns-query"))
-        .and(query_param("name", "_spectre-challenge.corp.example.net"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"Status": 0, "Answer": [{"name": "_spectre-challenge.corp.example.net", "type": 16, "TTL": 60, "data": format!("\"{challenge}\"")}]})))
-        .mount(&server)
-        .await;
-    let verified = engine.check_domain_verification("corp.example.net").await.unwrap();
-    assert!(verified.verified);
-    let staff = engine.storage().email_record("staff@corp.example.net").await.unwrap();
-    assert_eq!(staff.verification_method, Some(VerificationMethod::VerifiedDomain));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

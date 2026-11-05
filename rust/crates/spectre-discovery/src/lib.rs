@@ -26,7 +26,7 @@ use spectre_core::error::{ErrorCode, SpectreError, SpectreResult};
 use spectre_core::http::{EndpointPolicy, HttpClient, HttpSettings, RequestStats};
 use spectre_core::model::*;
 use spectre_core::provider::{OsintProvider, ProviderContext, ProviderDescriptor};
-use spectre_core::target::{InvestigationTarget, TargetType, normalize_domain, normalize_email};
+use spectre_core::target::{InvestigationTarget, TargetType, normalize_email};
 use spectre_correlation::CorrelationContext;
 use spectre_providers::dns::DohResolver;
 use spectre_storage::Storage;
@@ -41,7 +41,6 @@ pub use export::findings_csv;
 pub use spectre_storage::{AuditEvent, DashboardStats, InvestigationBundle, StorageInfo};
 
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
-const CHALLENGE_PREFIX: &str = "_spectre-challenge";
 const MIN_PURPOSE_CHARS: usize = 10;
 
 /// How to construct an engine.
@@ -96,14 +95,6 @@ pub struct ServiceStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DomainCheckResult {
-    pub record: DomainRecord,
-    pub verified: bool,
-    pub observed_values: usize,
-    pub message: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Diagnostics {
     pub engine_version: String,
     pub storage: StorageInfo,
@@ -129,7 +120,6 @@ pub struct Engine {
     providers: Vec<Arc<dyn OsintProvider>>,
     hibp: Arc<HibpClient>,
     pwned_passwords: PwnedPasswordsClient,
-    resolver: DohResolver,
     credentials: Arc<CredentialStore>,
     settings: RwLock<EngineSettings>,
     provider_configs: RwLock<HashMap<String, ProviderConfig>>,
@@ -205,7 +195,6 @@ impl Engine {
             providers,
             hibp,
             pwned_passwords,
-            resolver,
             credentials: Arc::new(CredentialStore::new()),
             concurrency: RwLock::new(Arc::new(Semaphore::new(settings.max_concurrency as usize))),
             settings: RwLock::new(settings),
@@ -370,7 +359,6 @@ impl Engine {
         let context = CorrelationContext {
             decisions: storage.decisions_for(investigation_id).await?,
             verified_emails: storage.verified_emails().await?.into_iter().collect(),
-            verified_domains: storage.verified_domains().await?.into_iter().collect(),
         };
         let result = spectre_correlation::correlate(investigation_id, &investigation.target, &findings, &context);
         storage.replace_graph(investigation_id, &result.graph).await?;
@@ -459,53 +447,6 @@ impl Engine {
         storage.record_audit(None, "email_ownership_revoked", serde_json::json!({ "email": email })).await?;
         self.recorrelate_matching(|investigation| investigation.target.value() == email).await?;
         Ok(record)
-    }
-
-    pub async fn start_domain_verification(&self, domain: &str) -> SpectreResult<DomainRecord> {
-        let domain = normalize_domain(domain)?;
-        let token: String = (0..16).map(|_| format!("{:02x}", rand::random::<u8>())).collect();
-        let record_name = format!("{CHALLENGE_PREFIX}.{domain}");
-        let storage = self.storage();
-        let record = storage.set_domain_challenge(&domain, &record_name, &format!("spectre-verify={token}")).await?;
-        storage.record_audit(None, "domain_verification_started", serde_json::json!({ "domain": domain })).await?;
-        Ok(record)
-    }
-
-    pub async fn check_domain_verification(&self, domain: &str) -> SpectreResult<DomainCheckResult> {
-        let domain = normalize_domain(domain)?;
-        let storage = self.storage();
-        let record = storage.domain_record(&domain).await?;
-        if record.verification_status == VerificationStatus::OwnershipVerified {
-            return Ok(DomainCheckResult { record, verified: true, observed_values: 0, message: "Domain is already verified.".into() });
-        }
-        let (Some(record_name), Some(expected)) = (record.challenge_record_name.clone(), record.challenge_value.clone()) else {
-            return Err(SpectreError::invalid_input("start domain verification first"));
-        };
-        let context =
-            self.context("domain-verification", "Domain Verification", CancellationToken::new(), Arc::new(RequestStats::default()));
-        let values = self.resolver.txt_uncached(&context, &record_name).await?;
-        if values.iter().any(|value| value.trim() == expected) {
-            let record = storage.mark_domain_verified(&domain).await?;
-            storage.record_audit(None, "domain_verified", serde_json::json!({ "domain": domain, "method": "dns_txt_challenge" })).await?;
-            let suffix = format!("@{domain}");
-            self.recorrelate_matching(|investigation| {
-                investigation.target.value() == domain || investigation.target.value().ends_with(&suffix)
-            })
-            .await?;
-            Ok(DomainCheckResult {
-                record,
-                verified: true,
-                observed_values: values.len(),
-                message: "TXT record found. Domain control verified.".into(),
-            })
-        } else {
-            Ok(DomainCheckResult {
-                record,
-                verified: false,
-                observed_values: values.len(),
-                message: format!("No matching TXT record at {record_name} yet. DNS changes can take several minutes to propagate."),
-            })
-        }
     }
 
     // -----------------------------------------------------------------------

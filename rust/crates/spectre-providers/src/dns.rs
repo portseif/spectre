@@ -113,24 +113,9 @@ impl DohResolver {
     }
 
     pub async fn query(&self, context: &ProviderContext, name: &str, record_type: RecordType) -> SpectreResult<DnsAnswer> {
-        self.query_with(context, name, record_type, true).await
-    }
-
-    /// Query with explicit cache control. Ownership challenges must bypass
-    /// the response cache so a freshly published record is seen immediately.
-    pub async fn query_with(
-        &self,
-        context: &ProviderContext,
-        name: &str,
-        record_type: RecordType,
-        cacheable: bool,
-    ) -> SpectreResult<DnsAnswer> {
         let mut url = self.endpoint.clone();
         url.query_pairs_mut().append_pair("name", name).append_pair("type", record_type.name());
-        let mut request = context.request(url).accept("application/dns-json");
-        if !cacheable {
-            request = request.no_cache();
-        }
+        let request = context.request(url).accept("application/dns-json");
         let response = context.get(request).await?.ensure_success()?;
         let parsed: DohResponse = response.json()?;
         let response_code = match parsed.status {
@@ -161,11 +146,6 @@ impl DohResolver {
     /// TXT values, each with its character-strings joined.
     pub async fn txt(&self, context: &ProviderContext, name: &str) -> SpectreResult<Vec<String>> {
         Ok(self.query(context, name, RecordType::Txt).await?.records.into_iter().map(|record| record.value).collect())
-    }
-
-    /// TXT values fetched fresh (never served from cache).
-    pub async fn txt_uncached(&self, context: &ProviderContext, name: &str) -> SpectreResult<Vec<String>> {
-        Ok(self.query_with(context, name, RecordType::Txt, false).await?.records.into_iter().map(|record| record.value).collect())
     }
 }
 

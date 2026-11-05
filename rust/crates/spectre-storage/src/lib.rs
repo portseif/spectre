@@ -23,7 +23,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, S
 use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
 fn db(error: sqlx::Error) -> SpectreError {
@@ -195,34 +195,18 @@ impl Storage {
         .await
         .map_err(db)?;
         let now = timestamp(Utc::now());
-        match &investigation.target {
-            InvestigationTarget::Email(email) => {
-                sqlx::query(
-                    "INSERT INTO email_addresses (id, email, verification_status, created_at, updated_at) VALUES (?, ?, 'unverified', ?, ?)
-                     ON CONFLICT (email) DO NOTHING",
-                )
-                .bind(Uuid::new_v4().to_string())
-                .bind(email)
-                .bind(&now)
-                .bind(&now)
-                .execute(&mut *transaction)
-                .await
-                .map_err(db)?;
-            }
-            InvestigationTarget::Domain(domain) => {
-                sqlx::query(
-                    "INSERT INTO domains (id, domain, verification_status, created_at, updated_at) VALUES (?, ?, 'unverified', ?, ?)
-                     ON CONFLICT (domain) DO NOTHING",
-                )
-                .bind(Uuid::new_v4().to_string())
-                .bind(domain)
-                .bind(&now)
-                .bind(&now)
-                .execute(&mut *transaction)
-                .await
-                .map_err(db)?;
-            }
-            _ => {}
+        if let InvestigationTarget::Email(email) = &investigation.target {
+            sqlx::query(
+                "INSERT INTO email_addresses (id, email, verification_status, created_at, updated_at) VALUES (?, ?, 'unverified', ?, ?)
+                 ON CONFLICT (email) DO NOTHING",
+            )
+            .bind(Uuid::new_v4().to_string())
+            .bind(email)
+            .bind(&now)
+            .bind(&now)
+            .execute(&mut *transaction)
+            .await
+            .map_err(db)?;
         }
         transaction.commit().await.map_err(db)
     }
@@ -817,94 +801,8 @@ impl Storage {
         self.email_record(email).await
     }
 
-    fn domain_from_row(row: &SqliteRow) -> SpectreResult<DomainRecord> {
-        let status: String = row.try_get("verification_status").map_err(db)?;
-        let method: Option<String> = row.try_get("verification_method").map_err(db)?;
-        Ok(DomainRecord {
-            domain: row.try_get("domain").map_err(db)?,
-            verification_status: VerificationStatus::parse(&status).ok_or_else(|| SpectreError::storage("invalid verification status"))?,
-            verification_method: method.as_deref().and_then(VerificationMethod::parse),
-            challenge_value: row.try_get("challenge_value").map_err(db)?,
-            challenge_record_name: row.try_get("challenge_record_name").map_err(db)?,
-            verified_at: parse_optional_time(row.try_get("verified_at").map_err(db)?)?,
-            created_at: parse_time(&row.try_get::<String, _>("created_at").map_err(db)?)?,
-        })
-    }
-
-    pub async fn domain_record(&self, domain: &str) -> SpectreResult<DomainRecord> {
-        let row = sqlx::query("SELECT * FROM domains WHERE domain = ?")
-            .bind(domain)
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(db)?
-            .ok_or_else(|| SpectreError::not_found(format!("{domain} is not known")))?;
-        Self::domain_from_row(&row)
-    }
-
-    pub async fn list_domains(&self) -> SpectreResult<Vec<DomainRecord>> {
-        sqlx::query("SELECT * FROM domains ORDER BY domain")
-            .fetch_all(&self.pool)
-            .await
-            .map_err(db)?
-            .iter()
-            .map(Self::domain_from_row)
-            .collect()
-    }
-
-    pub async fn set_domain_challenge(&self, domain: &str, record_name: &str, value: &str) -> SpectreResult<DomainRecord> {
-        let now = timestamp(Utc::now());
-        sqlx::query(
-            "INSERT INTO domains (id, domain, verification_status, challenge_value, challenge_record_name, created_at, updated_at)
-             VALUES (?, ?, 'ownership_pending', ?, ?, ?, ?)
-             ON CONFLICT (domain) DO UPDATE SET verification_status = 'ownership_pending', verification_method = NULL, verified_at = NULL,
-                 challenge_value = excluded.challenge_value, challenge_record_name = excluded.challenge_record_name, updated_at = excluded.updated_at",
-        )
-        .bind(Uuid::new_v4().to_string())
-        .bind(domain)
-        .bind(value)
-        .bind(record_name)
-        .bind(&now)
-        .bind(&now)
-        .execute(&self.pool)
-        .await
-        .map_err(db)?;
-        self.domain_record(domain).await
-    }
-
-    pub async fn mark_domain_verified(&self, domain: &str) -> SpectreResult<DomainRecord> {
-        let now = timestamp(Utc::now());
-        let mut transaction = self.pool.begin().await.map_err(db)?;
-        sqlx::query("UPDATE domains SET verification_status = 'ownership_verified', verification_method = 'dns_txt_challenge', verified_at = ?, updated_at = ? WHERE domain = ?")
-            .bind(&now)
-            .bind(&now)
-            .bind(domain)
-            .execute(&mut *transaction)
-            .await
-            .map_err(db)?;
-        // Addresses on a verified domain inherit verification.
-        sqlx::query(
-            "UPDATE email_addresses SET verification_status = 'ownership_verified', verification_method = 'verified_domain', verified_at = ?, updated_at = ?
-             WHERE substr(email, instr(email, '@') + 1) = ? AND verification_status != 'ownership_verified'",
-        )
-        .bind(&now)
-        .bind(&now)
-        .bind(domain)
-        .execute(&mut *transaction)
-        .await
-        .map_err(db)?;
-        transaction.commit().await.map_err(db)?;
-        self.domain_record(domain).await
-    }
-
     pub async fn verified_emails(&self) -> SpectreResult<Vec<String>> {
         sqlx::query_scalar("SELECT email FROM email_addresses WHERE verification_status = 'ownership_verified'")
-            .fetch_all(&self.pool)
-            .await
-            .map_err(db)
-    }
-
-    pub async fn verified_domains(&self) -> SpectreResult<Vec<String>> {
-        sqlx::query_scalar("SELECT domain FROM domains WHERE verification_status = 'ownership_verified'")
             .fetch_all(&self.pool)
             .await
             .map_err(db)

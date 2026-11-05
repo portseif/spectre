@@ -192,7 +192,6 @@ impl Confidence {
 pub enum VerificationStatus {
     Unverified,
     PubliclyObserved,
-    OwnershipPending,
     OwnershipVerified,
 }
 
@@ -201,7 +200,6 @@ impl VerificationStatus {
         match self {
             Self::Unverified => "unverified",
             Self::PubliclyObserved => "publicly_observed",
-            Self::OwnershipPending => "ownership_pending",
             Self::OwnershipVerified => "ownership_verified",
         }
     }
@@ -210,21 +208,16 @@ impl VerificationStatus {
         Some(match raw {
             "unverified" => Self::Unverified,
             "publicly_observed" => Self::PubliclyObserved,
-            "ownership_pending" => Self::OwnershipPending,
             "ownership_verified" => Self::OwnershipVerified,
             _ => return None,
         })
     }
 }
 
-/// How ownership of an email address or domain was established.
+/// How ownership of an email address was established.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum VerificationMethod {
-    /// A DNS TXT challenge on the domain was observed.
-    DnsTxtChallenge,
-    /// The address belongs to a domain verified via DNS TXT challenge.
-    VerifiedDomain,
     /// The investigator attested ownership or written authorization.
     InvestigatorAttestation,
 }
@@ -232,16 +225,12 @@ pub enum VerificationMethod {
 impl VerificationMethod {
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::DnsTxtChallenge => "dns_txt_challenge",
-            Self::VerifiedDomain => "verified_domain",
             Self::InvestigatorAttestation => "investigator_attestation",
         }
     }
 
     pub fn parse(raw: &str) -> Option<Self> {
         Some(match raw {
-            "dns_txt_challenge" => Self::DnsTxtChallenge,
-            "verified_domain" => Self::VerifiedDomain,
             "investigator_attestation" => Self::InvestigatorAttestation,
             _ => return None,
         })
@@ -621,19 +610,6 @@ pub struct EmailRecord {
     pub attestation: Option<String>,
     pub verified_at: Option<DateTime<Utc>>,
     pub last_breach_check_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DomainRecord {
-    pub domain: String,
-    pub verification_status: VerificationStatus,
-    pub verification_method: Option<VerificationMethod>,
-    /// TXT record value the investigator must publish.
-    pub challenge_value: Option<String>,
-    /// DNS name where the TXT record must be published.
-    pub challenge_record_name: Option<String>,
-    pub verified_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 

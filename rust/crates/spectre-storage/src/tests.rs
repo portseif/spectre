@@ -63,7 +63,6 @@ async fn migrations_create_the_full_schema() {
         "audit_events",
         "breach_exposures",
         "breach_incidents",
-        "domains",
         "email_addresses",
         "engine_settings",
         "finding_sources",
@@ -221,16 +220,6 @@ async fn email_verification_never_downgrades_and_domains_propagate() {
     });
     storage.insert_finding(&association).await.unwrap();
     assert_eq!(storage.email_record("owner@example.org").await.unwrap().verification_status, VerificationStatus::OwnershipVerified);
-
-    storage.ensure_email("staff@corp.example.net").await.unwrap();
-    let pending =
-        storage.set_domain_challenge("corp.example.net", "_spectre-challenge.corp.example.net", "spectre-verify=abc").await.unwrap();
-    assert_eq!(pending.verification_status, VerificationStatus::OwnershipPending);
-    storage.mark_domain_verified("corp.example.net").await.unwrap();
-    let staff = storage.email_record("staff@corp.example.net").await.unwrap();
-    assert_eq!(staff.verification_status, VerificationStatus::OwnershipVerified);
-    assert_eq!(staff.verification_method, Some(VerificationMethod::VerifiedDomain));
-    assert_eq!(storage.verified_domains().await.unwrap(), vec!["corp.example.net".to_string()]);
 }
 
 #[tokio::test]

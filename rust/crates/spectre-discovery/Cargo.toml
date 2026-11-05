@@ -24,7 +24,6 @@ chrono = { workspace = true }
 tracing = { workspace = true }
 async-trait = { workspace = true }
 zeroize = { workspace = true }
-rand = { workspace = true }
 hex = { workspace = true }
 url = { workspace = true }
 

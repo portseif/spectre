@@ -43,8 +43,6 @@ protocol EngineClient: Sendable {
     func verifications() async throws -> VerificationList
     func attestEmail(_ email: String, statement: String) async throws -> EmailRecord
     func revokeEmail(_ email: String) async throws -> EmailRecord
-    func startDomainVerification(_ domain: String) async throws -> DomainRecord
-    func checkDomainVerification(_ domain: String) async throws -> DomainCheckResult
     func lookupBreaches(email: String, investigationID: UUID?) async throws -> BreachExposureReport
     func storedExposures(email: String) async throws -> BreachExposureReport
     func refreshBreachCatalog() async throws -> Int
@@ -83,11 +81,9 @@ extension EngineClient {
     func updateSettings(_ settings: EngineSettings) async throws -> EngineSettings { settings }
     func setCredential(id: String, secret: String) async throws {}
     func clearCredential(id: String) async throws {}
-    func verifications() async throws -> VerificationList { VerificationList(emails: [], domains: []) }
+    func verifications() async throws -> VerificationList { VerificationList(emails: []) }
     func attestEmail(_ email: String, statement: String) async throws -> EmailRecord { throw EngineError.unsupported() }
     func revokeEmail(_ email: String) async throws -> EmailRecord { throw EngineError.unsupported() }
-    func startDomainVerification(_ domain: String) async throws -> DomainRecord { throw EngineError.unsupported() }
-    func checkDomainVerification(_ domain: String) async throws -> DomainCheckResult { throw EngineError.unsupported() }
     func lookupBreaches(email: String, investigationID: UUID?) async throws -> BreachExposureReport { throw EngineError.unsupported() }
     func storedExposures(email: String) async throws -> BreachExposureReport { throw EngineError.unsupported() }
     func refreshBreachCatalog() async throws -> Int { throw EngineError.unsupported() }

@@ -40,10 +40,8 @@ struct BreachIntelligenceView: View {
 private struct OwnershipVerificationView: View {
     @Environment(AppModel.self) private var model
     let onShowReport: (String) -> Void
-    @State private var list = VerificationList(emails: [], domains: [])
-    @State private var newDomain = ""
+    @State private var list = VerificationList(emails: [])
     @State private var attestationTarget: AttestationTarget?
-    @State private var domainMessage: String?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -65,38 +63,7 @@ private struct OwnershipVerificationView: View {
             } header: {
                 Text("Email addresses")
             } footer: {
-                Text("Only ownership-verified addresses can be submitted for account-specific breach lookups. Attestation records your statement in the audit log; DNS verification proves control of the whole domain.")
-            }
-
-            Section {
-                ForEach(list.domains) { record in
-                    DomainVerificationRow(record: record) {
-                        perform { _ = try await $0.startDomainVerification(record.domain) }
-                    } onCheck: {
-                        perform { engine in
-                            let result = try await engine.checkDomainVerification(record.domain)
-                            domainMessage = result.message
-                        }
-                    }
-                }
-                HStack {
-                    TextField("Domain you control", text: $newDomain, prompt: Text("example.com"))
-                    Button("Start DNS Verification") {
-                        let domain = newDomain
-                        perform { engine in
-                            _ = try await engine.startDomainVerification(domain)
-                            newDomain = ""
-                        }
-                    }
-                    .disabled(newDomain.isEmpty)
-                }
-                if let domainMessage {
-                    Text(domainMessage).font(.callout).foregroundStyle(.spectreSecondary)
-                }
-            } header: {
-                Text("Domains")
-            } footer: {
-                Text("Publish the TXT record shown, then check. Every address on a verified domain is treated as ownership-verified.")
+                Text("Only addresses whose ownership you have attested can be submitted for account-specific breach lookups. Attestation records your statement in the audit log.")
             }
             if let errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)
@@ -165,56 +132,6 @@ private struct EmailVerificationRow: View {
             } else {
                 Button("Attest Ownership…", action: onAttest)
             }
-        }
-    }
-}
-
-private struct DomainVerificationRow: View {
-    let record: DomainRecord
-    let onRestart: () -> Void
-    let onCheck: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(record.domain, systemImage: "globe").font(.body.weight(.medium))
-                Spacer()
-                VerificationBadge(status: record.verificationStatus)
-                switch record.verificationStatus {
-                case .ownershipPending: Button("Check DNS", action: onCheck)
-                case .ownershipVerified: EmptyView()
-                default: Button("Verify…", action: onRestart)
-                }
-            }
-            if record.verificationStatus == .ownershipPending, let name = record.challengeRecordName, let value = record.challengeValue {
-                VStack(alignment: .leading, spacing: 4) {
-                    CopyableValue(label: "TXT name", value: name)
-                    CopyableValue(label: "TXT value", value: value)
-                }
-                .padding(10)
-                .background(Theme.elevated, in: .rect(cornerRadius: 8))
-            }
-        }
-    }
-}
-
-private struct CopyableValue: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label).font(.caption).foregroundStyle(.spectreSecondary).frame(width: 70, alignment: .leading)
-            Text(value).font(.caption.monospaced()).textSelection(.enabled)
-            Spacer()
-            Button {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(value, forType: .string)
-            } label: {
-                Image(systemName: "doc.on.doc")
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(Text("Copy \(label)"))
         }
     }
 }

@@ -177,28 +177,22 @@ struct Confidence: Codable, Hashable, Sendable {
 enum VerificationStatus: String, Codable, Sendable {
     case unverified
     case publiclyObserved = "publicly_observed"
-    case ownershipPending = "ownership_pending"
     case ownershipVerified = "ownership_verified"
 
     var label: String {
         switch self {
         case .unverified: "Unverified"
         case .publiclyObserved: "Publicly Observed"
-        case .ownershipPending: "Ownership Pending"
         case .ownershipVerified: "Ownership Verified"
         }
     }
 }
 
 enum VerificationMethod: String, Codable, Sendable {
-    case dnsTxtChallenge = "dns_txt_challenge"
-    case verifiedDomain = "verified_domain"
     case investigatorAttestation = "investigator_attestation"
 
     var label: String {
         switch self {
-        case .dnsTxtChallenge: "DNS TXT challenge"
-        case .verifiedDomain: "Verified domain"
         case .investigatorAttestation: "Investigator attestation"
         }
     }
@@ -599,28 +593,8 @@ struct EmailRecord: Codable, Hashable, Identifiable, Sendable {
     var id: String { email }
 }
 
-struct DomainRecord: Codable, Hashable, Identifiable, Sendable {
-    let domain: String
-    let verificationStatus: VerificationStatus
-    let verificationMethod: VerificationMethod?
-    let challengeValue: String?
-    let challengeRecordName: String?
-    let verifiedAt: Date?
-    let createdAt: Date
-
-    var id: String { domain }
-}
-
-struct DomainCheckResult: Codable, Hashable, Sendable {
-    let record: DomainRecord
-    let verified: Bool
-    let observedValues: Int
-    let message: String
-}
-
 struct VerificationList: Codable, Hashable, Sendable {
     let emails: [EmailRecord]
-    let domains: [DomainRecord]
 }
 
 struct CatalogSearchResult: Codable, Hashable, Sendable {

@@ -37,7 +37,7 @@ impl AuthorizedAccount {
         match (record.verification_status, record.verification_method) {
             (VerificationStatus::OwnershipVerified, Some(method)) => Ok(Self { email: record.email.clone(), method }),
             _ => Err(SpectreError::authorization_required(format!(
-                "{} is not ownership-verified. Verify ownership (DNS challenge or recorded attestation) before requesting account-specific breach data.",
+                "{} is not ownership-verified. Record an ownership attestation before requesting account-specific breach data.",
                 record.email
             ))),
         }

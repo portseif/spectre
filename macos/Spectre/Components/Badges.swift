@@ -78,7 +78,6 @@ struct VerificationBadge: View {
     private var tint: Color {
         switch status {
         case .ownershipVerified: Theme.success
-        case .ownershipPending: Theme.warning
         case .publiclyObserved: Theme.secondaryAccent
         case .unverified: Theme.secondaryText
         }
@@ -87,7 +86,6 @@ struct VerificationBadge: View {
     private var symbol: String {
         switch status {
         case .ownershipVerified: "checkmark.shield.fill"
-        case .ownershipPending: "hourglass"
         case .publiclyObserved: "eye"
         case .unverified: "questionmark.diamond"
         }

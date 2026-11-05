@@ -8,17 +8,14 @@ Every investigation needs a purpose of at least 10 characters describing the aut
 
 Breach data has a harder gate. `AuthorizedAccount` in `spectre-breach` can only be created from an `EmailRecord` whose status is `ownership_verified`, and the account-specific HIBP lookup only accepts an `AuthorizedAccount`. An unverified address can't reach that API at all, and the engine refuses before it sends anything.
 
-Ownership can be shown two ways:
-
-- A DNS TXT challenge on a domain. The record goes at `_spectre-challenge.<domain>` with the value `spectre-verify=<128 random bits>`, and the check always queries fresh instead of using the cache. Once a domain is verified, every address on it counts as verified too.
-- An attestation for a single mailbox. You write a statement, which is stored and audited. You can revoke it later, and the app labels it as an attestation everywhere it appears.
+Ownership is shown by attestation. You write a statement for a single mailbox, which is stored and audited. You can revoke it later, and the app labels it as an attestation everywhere it appears. An earlier version also supported a DNS TXT challenge on a whole domain; that was removed to keep the gate to one deliberate, per-address action.
 
 When an investigator confirms or rejects an association, that decision is audited too, and it survives correlation reruns.
 
 The audit log records:
 
 - investigations starting and finishing, deletions, exports and imports
-- attestations, domain verification and breach lookups
+- attestations and breach lookups
 - password checks (only that one happened, never the result or any hash material)
 - settings changes, purges, backups and restores
 
