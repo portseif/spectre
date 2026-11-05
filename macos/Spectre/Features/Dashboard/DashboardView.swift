@@ -12,11 +12,10 @@ struct DashboardView: View {
                 DashboardHeader()
                 if let stats {
                     MetricGrid(stats: stats)
-                    HStack(alignment: .top, spacing: Theme.spacing) {
+                    // Two charts per row when there is room, one when the window is narrow.
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 340), spacing: Theme.spacing, alignment: .top)], alignment: .leading, spacing: Theme.spacing) {
                         ActivityChart(days: stats.investigationsByDay)
                         ConfidenceChart(categories: stats.findingsByCategory)
-                    }
-                    HStack(alignment: .top, spacing: Theme.spacing) {
                         ProviderChart(providers: stats.findingsByProvider)
                         ExposureChart(years: stats.exposuresByYear)
                     }
@@ -28,6 +27,8 @@ struct DashboardView: View {
                 RecentInvestigations(investigations: Array(model.investigations.prefix(6)))
             }
             .padding(24)
+            .frame(maxWidth: 1400)
+            .frame(maxWidth: .infinity)
         }
         .navigationTitle("Dashboard")
         .task(id: model.investigations) { await load() }
@@ -48,22 +49,41 @@ private struct DashboardHeader: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Intelligence overview").font(.largeTitle.weight(.semibold))
-                Text("Public discovery, evidence-based correlation, and authorized breach exposure.")
-                    .foregroundStyle(.spectreSecondary)
+        // Keep the button beside the title when it fits, otherwise move it underneath.
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.spacing) {
+                DashboardTitle()
+                Spacer(minLength: 0)
+                NewInvestigationButton { model.selection = .newInvestigation }
             }
-            Spacer()
-            Button {
-                model.selection = .newInvestigation
-            } label: {
-                Label("New Investigation", systemImage: "plus.magnifyingglass")
+            VStack(alignment: .leading, spacing: 12) {
+                DashboardTitle()
+                NewInvestigationButton { model.selection = .newInvestigation }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Theme.accent)
-            .controlSize(.large)
         }
+    }
+}
+
+private struct DashboardTitle: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Intelligence overview").font(.largeTitle.weight(.semibold))
+            Text("Public discovery, evidence-based correlation, and authorized breach exposure.")
+                .foregroundStyle(.spectreSecondary)
+        }
+    }
+}
+
+private struct NewInvestigationButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label("New Investigation", systemImage: "plus.magnifyingglass")
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(Theme.accent)
+        .controlSize(.large)
     }
 }
 
@@ -71,7 +91,7 @@ private struct MetricGrid: View {
     let stats: DashboardStats
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: Theme.spacing)], spacing: Theme.spacing) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.spacing)], spacing: Theme.spacing) {
             MetricTile(title: "Investigations", value: stats.investigations.formatted(), symbol: "list.bullet.rectangle")
             MetricTile(title: "Running", value: stats.running.formatted(), symbol: "bolt.horizontal.circle", tint: Theme.secondaryAccent)
             MetricTile(title: "Findings", value: stats.findings.formatted(), symbol: "sparkle.magnifyingglass")
@@ -234,8 +254,8 @@ struct InvestigationSummaryRow: View {
                     .font(.caption)
                     .foregroundStyle(.spectreSecondary)
             }
-            Spacer()
-            Text("\(findings) findings").font(.caption.monospacedDigit()).foregroundStyle(.spectreSecondary)
+            Spacer(minLength: 8)
+            Text("\(findings) findings").font(.caption.monospacedDigit()).foregroundStyle(.spectreSecondary).lineLimit(1)
             StatusBadge(status: status)
         }
         .contentShape(.rect)

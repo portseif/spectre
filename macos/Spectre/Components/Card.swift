@@ -14,10 +14,29 @@ struct Card<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.surface, in: .rect(cornerRadius: Theme.cornerRadius))
+            .background(Theme.surface, in: .rect(cornerRadius: Theme.cornerRadius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: Theme.cornerRadius).strokeBorder(Theme.border, lineWidth: 1)
+                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.border.opacity(0.7), lineWidth: 1)
             }
+    }
+}
+
+/// Background for controls that float over content, such as the graph's
+/// zoom buttons and legend: Liquid Glass on macOS 26, a material before that.
+private struct FloatingPanelBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.glassEffect(.regular, in: .rect(cornerRadius: 12, style: .continuous))
+        } else {
+            content.background(.regularMaterial, in: .rect(cornerRadius: 12, style: .continuous))
+        }
+    }
+}
+
+extension View {
+    func floatingPanel() -> some View {
+        modifier(FloatingPanelBackground())
     }
 }
 
@@ -45,6 +64,14 @@ struct SectionHeader: View {
             Spacer(minLength: 0)
         }
     }
+}
+
+#Preview("Floating panel") {
+    Label("Zoom", systemImage: "plus.magnifyingglass")
+        .padding(10)
+        .floatingPanel()
+        .padding(40)
+        .background(Theme.background)
 }
 
 #Preview("Card") {

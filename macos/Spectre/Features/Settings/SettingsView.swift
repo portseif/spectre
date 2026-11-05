@@ -44,7 +44,12 @@ private struct GeneralSettings: View {
             }
             Section("Investigation storage") {
                 LabeledContent("Database") {
-                    Text(AppModel.databaseURL.path(percentEncoded: false)).textSelection(.enabled).font(.caption.monospaced())
+                    Text(AppModel.databaseURL.path(percentEncoded: false))
+                        .font(.caption.monospaced())
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                        .help(AppModel.databaseURL.path(percentEncoded: false))
                 }
                 Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([AppModel.databaseURL]) }
                 Text("Investigations are stored in Spectre's sandboxed container. Use Advanced > Back Up to copy the database elsewhere.")

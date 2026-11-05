@@ -61,7 +61,7 @@ final class AppModel {
     var selection: SidebarItem? = .dashboard
     var investigationPath: [UUID] = []
     var inspector: InspectorItem?
-    var isInspectorPresented = true
+    var isInspectorPresented = false
     private(set) var investigations: [Investigation] = []
     private(set) var listError: String?
     var searchText = ""
@@ -70,6 +70,12 @@ final class AppModel {
     @ObservationIgnored private var sessions: [UUID: InvestigationViewModel] = [:]
 
     init() {}
+
+    /// Show an item in the inspector, opening it if the user had closed it.
+    func inspect(_ item: InspectorItem) {
+        inspector = item
+        isInspectorPresented = true
+    }
 
     /// Inject an engine directly (tests, previews).
     init(engine: any EngineClient) {

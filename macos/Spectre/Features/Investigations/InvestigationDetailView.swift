@@ -19,13 +19,9 @@ struct InvestigationDetailView: View {
         VStack(spacing: 0) {
             InvestigationHeader(session: session)
                 .padding(20)
-            Picker("Section", selection: $tab) {
-                ForEach(DetailTab.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
+            DetailTabPicker(tab: $tab)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
             Divider()
             switch tab {
             case .findings: FindingsList(sections: session.sections, isRunning: session.isRunning)
@@ -36,7 +32,7 @@ struct InvestigationDetailView: View {
             case .diagnostics: RunDetailsTab(investigation: session.investigation, providerStates: session.providerStates)
             }
         }
-        .frame(minWidth: 560, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle(session.investigation?.target.value ?? "Investigation")
         .navigationSubtitle(session.investigation?.targetType.label ?? "")
         .task { await session.load() }
@@ -45,6 +41,28 @@ struct InvestigationDetailView: View {
         } message: {
             Text(session.actionError ?? "")
         }
+    }
+}
+
+private struct DetailTabPicker: View {
+    @Binding var tab: InvestigationDetailView.DetailTab
+
+    var body: some View {
+        // Six segments need about 540 points; below that a menu keeps every tab reachable.
+        ViewThatFits(in: .horizontal) {
+            Picker("Section", selection: $tab) {
+                ForEach(InvestigationDetailView.DetailTab.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .fixedSize()
+            Picker("Section", selection: $tab) {
+                ForEach(InvestigationDetailView.DetailTab.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
+        }
+        .labelsHidden()
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -59,10 +77,11 @@ private struct InvestigationHeader: View {
                     .foregroundStyle(Theme.accent)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(session.investigation?.target.value ?? "…").font(.title2.weight(.semibold)).textSelection(.enabled)
+                    Text(session.investigation?.target.value ?? "…").font(.title2.weight(.semibold)).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                     Text(session.investigation?.purpose ?? "").font(.callout).foregroundStyle(.spectreSecondary).lineLimit(2)
                 }
-                Spacer()
+                .layoutPriority(1)
+                Spacer(minLength: 8)
                 StatusBadge(status: session.status)
                 if session.isRunning {
                     Button(role: .destructive) {
@@ -143,8 +162,7 @@ private struct FindingsList: View {
             .onChange(of: selection) { _, identifier in
                 guard let identifier else { return }
                 if let finding = sections.lazy.flatMap(\.findings).first(where: { $0.id == identifier }) {
-                    model.inspector = .finding(finding)
-                    model.isInspectorPresented = true
+                    model.inspect(.finding(finding))
                 }
             }
         }
@@ -174,8 +192,7 @@ struct RelationshipList: View {
                         ) { decision in
                             Task { await session.decide(edge.id, decision: decision) }
                         } onSelect: {
-                            model.inspector = .relationship(edge, source: nodes[edge.sourceIdentity], target: nodes[edge.targetIdentity])
-                            model.isInspectorPresented = true
+                            model.inspect(.relationship(edge, source: nodes[edge.sourceIdentity], target: nodes[edge.targetIdentity]))
                         }
                     }
                 } header: {
@@ -205,38 +222,57 @@ struct RelationshipRow: View {
     let onSelect: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(sourceLabel).lineLimit(1)
-                    Image(systemName: "arrow.right").font(.caption).foregroundStyle(.spectreSecondary).accessibilityLabel(Text("to"))
-                    Text(targetLabel).lineLimit(1).fontWeight(.medium)
-                }
-                Text("\(relationship.label) · score \(score, format: .number.precision(.fractionLength(2)))")
-                    .font(.caption)
-                    .foregroundStyle(.spectreSecondary)
+        // The badge sits under the labels so long identity names have the full row to wrap in.
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
+                RelationshipSummary(sourceLabel: sourceLabel, targetLabel: targetLabel, relationship: relationship, score: score)
+                ConfidenceBadge(category: category)
             }
-            Spacer()
-            ConfidenceBadge(category: category)
-            if isEditable {
-                ControlGroup {
-                    Button { onDecide(decision == .confirmed ? nil : .confirmed) } label: {
-                        Image(systemName: decision == .confirmed ? "checkmark.circle.fill" : "checkmark.circle")
-                    }
-                    .help("Confirm association")
-                    .accessibilityLabel(Text("Confirm association"))
-                    Button { onDecide(decision == .rejected ? nil : .rejected) } label: {
-                        Image(systemName: decision == .rejected ? "xmark.circle.fill" : "xmark.circle")
-                    }
-                    .help("Reject association")
-                    .accessibilityLabel(Text("Reject association"))
-                }
-                .controlGroupStyle(.navigation)
-                .fixedSize()
-            }
+            Spacer(minLength: 0)
+            if isEditable { DecisionControls(decision: decision, onDecide: onDecide) }
         }
         .contentShape(.rect)
         .onTapGesture(perform: onSelect)
+    }
+}
+
+private struct RelationshipSummary: View {
+    let sourceLabel: String
+    let targetLabel: String
+    let relationship: RelationshipKind
+    let score: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("\(sourceLabel) \(Image(systemName: "arrow.right")) \(Text(targetLabel).fontWeight(.medium))")
+                .lineLimit(2)
+                .accessibilityLabel(Text("\(sourceLabel) to \(targetLabel)"))
+            Text("\(relationship.label) · score \(score, format: .number.precision(.fractionLength(2)))")
+                .font(.caption)
+                .foregroundStyle(.spectreSecondary)
+        }
+    }
+}
+
+private struct DecisionControls: View {
+    let decision: InvestigatorDecision?
+    let onDecide: (InvestigatorDecision?) -> Void
+
+    var body: some View {
+        ControlGroup {
+            Button { onDecide(decision == .confirmed ? nil : .confirmed) } label: {
+                Image(systemName: decision == .confirmed ? "checkmark.circle.fill" : "checkmark.circle")
+            }
+            .help("Confirm association")
+            .accessibilityLabel(Text("Confirm association"))
+            Button { onDecide(decision == .rejected ? nil : .rejected) } label: {
+                Image(systemName: decision == .rejected ? "xmark.circle.fill" : "xmark.circle")
+            }
+            .help("Reject association")
+            .accessibilityLabel(Text("Reject association"))
+        }
+        .controlGroupStyle(.navigation)
+        .fixedSize()
     }
 }
 
@@ -295,7 +331,7 @@ private struct BreachExposureTab: View {
                 Section("Known breaches") {
                     ForEach(breachFindings) { finding in
                         FindingRow(finding: finding)
-                            .onTapGesture { model.inspector = .finding(finding) }
+                            .onTapGesture { model.inspect(.finding(finding)) }
                     }
                 }
             }

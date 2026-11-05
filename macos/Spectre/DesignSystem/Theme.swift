@@ -24,7 +24,7 @@ enum Theme {
     static let warning = Color(nsColor: NSColor(hex: 0xF59E0B))
     static let danger = Color(nsColor: NSColor(hex: 0xEF4444))
 
-    static let cornerRadius: CGFloat = 10
+    static let cornerRadius: CGFloat = 14
     static let spacing: CGFloat = 16
 
     static func color(for category: ConfidenceCategory) -> Color {

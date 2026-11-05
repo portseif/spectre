@@ -21,15 +21,17 @@ struct IdentityGraphView: View {
         let visible = visible
         GeometryReader { geometry in
             let center = CGPoint(x: geometry.size.width / 2 + offset.width, y: geometry.size.height / 2 + offset.height)
+            // The user's zoom is relative to a scale that fits the whole graph in the canvas.
+            let zoom = scale * fittedScale(in: geometry.size)
             Canvas { context, _ in
-                draw(visible, in: &context, center: center)
+                draw(visible, in: &context, center: center, zoom: zoom)
             }
             .contentShape(.rect)
             .gesture(panGesture)
             .simultaneousGesture(zoomGesture)
             .simultaneousGesture(
                 SpatialTapGesture().onEnded { value in
-                    select(at: value.location, center: center, graph: visible)
+                    select(at: value.location, center: center, zoom: zoom, graph: visible)
                 }
             )
             .accessibilityElement(children: .ignore)
@@ -56,16 +58,28 @@ struct IdentityGraphView: View {
         withAnimation(.smooth(duration: 0.35)) { positions = computed }
     }
 
-    private func screenPoint(_ id: UUID, center: CGPoint) -> CGPoint? {
+    private func screenPoint(_ id: UUID, center: CGPoint, zoom: CGFloat) -> CGPoint? {
         guard let point = positions[id] else { return nil }
-        return CGPoint(x: center.x + point.x * scale, y: center.y + point.y * scale)
+        return CGPoint(x: center.x + point.x * zoom, y: center.y + point.y * zoom)
+    }
+
+    /// Largest scale (up to 1) at which every node, with room for its label,
+    /// fits inside a canvas of this size. The layout is centered on the target.
+    private func fittedScale(in size: CGSize) -> CGFloat {
+        let labelMargin: CGFloat = 56
+        let halfWidth = max(size.width / 2 - labelMargin, 40)
+        let halfHeight = max(size.height / 2 - labelMargin, 40)
+        var fitted: CGFloat = 1
+        if let extentX = positions.values.map({ abs($0.x) }).max(), extentX > 0 { fitted = min(fitted, halfWidth / extentX) }
+        if let extentY = positions.values.map({ abs($0.y) }).max(), extentY > 0 { fitted = min(fitted, halfHeight / extentY) }
+        return max(fitted, 0.1)
     }
 
     // MARK: Drawing
 
-    private func draw(_ graph: IdentityGraph, in context: inout GraphicsContext, center: CGPoint) {
+    private func draw(_ graph: IdentityGraph, in context: inout GraphicsContext, center: CGPoint, zoom: CGFloat) {
         for edge in graph.edges {
-            guard let from = screenPoint(edge.sourceIdentity, center: center), let to = screenPoint(edge.targetIdentity, center: center) else { continue }
+            guard let from = screenPoint(edge.sourceIdentity, center: center, zoom: zoom), let to = screenPoint(edge.targetIdentity, center: center, zoom: zoom) else { continue }
             var path = Path()
             path.move(to: from)
             path.addLine(to: to)
@@ -75,8 +89,8 @@ struct IdentityGraphView: View {
             context.stroke(path, with: .color(color.opacity(edge.category == .unrelated ? 0.25 : 0.75)), style: style)
         }
         for node in graph.nodes {
-            guard let point = screenPoint(node.id, center: center) else { continue }
-            let radius: CGFloat = (node.isTarget ? 16 : 10) * max(0.7, min(scale, 1.6))
+            guard let point = screenPoint(node.id, center: center, zoom: zoom) else { continue }
+            let radius: CGFloat = (node.isTarget ? 16 : 10) * max(0.7, min(zoom, 1.6))
             let circle = Path(ellipseIn: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2))
             let color = Theme.color(for: node.kind)
             context.fill(circle, with: .color(color.opacity(node.findingId == nil && !node.isTarget ? 0.45 : 1)))
@@ -112,17 +126,17 @@ struct IdentityGraphView: View {
             .onEnded { _ in committedScale = scale }
     }
 
-    private func select(at location: CGPoint, center: CGPoint, graph: IdentityGraph) {
+    private func select(at location: CGPoint, center: CGPoint, zoom: CGFloat, graph: IdentityGraph) {
         let hit = graph.nodes.min { lhs, rhs in
-            distance(location, screenPoint(lhs.id, center: center)) < distance(location, screenPoint(rhs.id, center: center))
+            distance(location, screenPoint(lhs.id, center: center, zoom: zoom)) < distance(location, screenPoint(rhs.id, center: center, zoom: zoom))
         }
-        if let hit, distance(location, screenPoint(hit.id, center: center)) < 20 {
+        if let hit, distance(location, screenPoint(hit.id, center: center, zoom: zoom)) < 20 {
             selectedNode = hit.id
             onSelectNode(hit)
             return
         }
         for edge in graph.edges {
-            guard let from = screenPoint(edge.sourceIdentity, center: center), let to = screenPoint(edge.targetIdentity, center: center) else { continue }
+            guard let from = screenPoint(edge.sourceIdentity, center: center, zoom: zoom), let to = screenPoint(edge.targetIdentity, center: center, zoom: zoom) else { continue }
             if distanceToSegment(location, from, to) < 6 {
                 selectedNode = nil
                 onSelectEdge(edge)
@@ -147,16 +161,20 @@ struct IdentityGraphView: View {
 
     private var zoomControls: some View {
         HStack(spacing: 4) {
-            Button { setScale(scale / 1.25) } label: { Image(systemName: "minus.magnifyingglass") }
+            Button { setScale(scale / 1.25) } label: { ZoomIcon(symbol: "minus.magnifyingglass") }
                 .accessibilityLabel(Text("Zoom out"))
-            Button { resetView() } label: { Image(systemName: "arrow.up.left.and.down.right.magnifyingglass") }
-                .accessibilityLabel(Text("Reset zoom"))
-            Button { setScale(scale * 1.25) } label: { Image(systemName: "plus.magnifyingglass") }
+                .help("Zoom out")
+            Button { resetView() } label: { ZoomIcon(symbol: "arrow.up.left.and.down.right.magnifyingglass") }
+                .accessibilityLabel(Text("Fit graph"))
+                .help("Fit the graph to the window")
+            Button { setScale(scale * 1.25) } label: { ZoomIcon(symbol: "plus.magnifyingglass") }
                 .accessibilityLabel(Text("Zoom in"))
+                .help("Zoom in")
         }
-        .buttonStyle(.bordered)
-        .padding(6)
-        .background(.regularMaterial, in: .rect(cornerRadius: 8))
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .floatingPanel()
     }
 
     private func setScale(_ value: CGFloat) {
@@ -173,6 +191,17 @@ struct IdentityGraphView: View {
             offset = .zero
             committedOffset = .zero
         }
+    }
+}
+
+private struct ZoomIcon: View {
+    let symbol: String
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 14, weight: .medium))
+            .frame(width: 28, height: 24)
+            .contentShape(.rect)
     }
 }
 
@@ -201,8 +230,8 @@ private struct GraphLegend: View {
         }
         .font(.caption2)
         .fixedSize()
-        .padding(8)
-        .background(.regularMaterial, in: .rect(cornerRadius: 8))
+        .padding(10)
+        .floatingPanel()
         .accessibilityHidden(true)
     }
 }

@@ -97,7 +97,7 @@ private struct ProfileDetail: View {
             Group {
                 if let location = profile.location { KeyValueRow(label: "Location", value: location) }
                 if let website = profile.website { KeyValueRow(label: "Website", value: website) }
-                if let created = profile.accountCreatedAt { KeyValueRow(label: "Account created", value: created) }
+                if let created = profile.accountCreatedAt { KeyValueRow(label: "Account created", value: EngineDate.display(created)) }
                 if let email = profile.publicEmail { KeyValueRow(label: "Public email", value: email) }
                 ForEach(profile.attributes.sorted { $0.key < $1.key }, id: \.key) { entry in
                     LabeledContent(entry.key.humanizedKey, value: entry.value).font(.callout)
@@ -213,9 +213,9 @@ private struct RegistrationDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             KeyValueRow(label: "Registrar", value: registration.registrar ?? "Not disclosed")
-            if let date = registration.registeredAt { KeyValueRow(label: "Registered", value: date) }
-            if let date = registration.expiresAt { KeyValueRow(label: "Expires", value: date) }
-            if let date = registration.lastChangedAt { KeyValueRow(label: "Last changed", value: date) }
+            if let date = registration.registeredAt { KeyValueRow(label: "Registered", value: EngineDate.display(date)) }
+            if let date = registration.expiresAt { KeyValueRow(label: "Expires", value: EngineDate.display(date)) }
+            if let date = registration.lastChangedAt { KeyValueRow(label: "Last changed", value: EngineDate.display(date)) }
             if let signed = registration.dnssecSigned { KeyValueRow(label: "DNSSEC", value: signed ? "Signed" : "Not signed") }
             if !registration.nameservers.isEmpty { KeyValueRow(label: "Nameservers", value: registration.nameservers.joined(separator: "\n")) }
             FlowLayout { ForEach(registration.statuses, id: \.self) { TagChip(text: $0) } }
@@ -246,7 +246,7 @@ private struct WebPresenceDetail: View {
             if let security = web.securityTxt {
                 Text("security.txt").font(.subheadline.weight(.semibold))
                 ForEach(security.contacts, id: \.self) { KeyValueRow(label: "Contact", value: $0) }
-                if let expires = security.expires { KeyValueRow(label: "Expires", value: expires) }
+                if let expires = security.expires { KeyValueRow(label: "Expires", value: EngineDate.display(expires)) }
             }
             if let checks = web.headerChecks, !checks.isEmpty {
                 Text("Security headers").font(.subheadline.weight(.semibold))
@@ -273,8 +273,8 @@ private struct CertificateDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             KeyValueRow(label: "Certificates", value: "\(certificates.certificates) logged, \(certificates.currentlyValid) valid now")
-            if let first = certificates.earliestNotBefore { KeyValueRow(label: "Earliest", value: first) }
-            if let last = certificates.latestNotAfter { KeyValueRow(label: "Latest expiry", value: last) }
+            if let first = certificates.earliestNotBefore { KeyValueRow(label: "Earliest", value: EngineDate.display(first)) }
+            if let last = certificates.latestNotAfter { KeyValueRow(label: "Latest expiry", value: EngineDate.display(last)) }
             KeyValueRow(label: "Issuers", value: certificates.issuers.joined(separator: "\n"))
             Text("Hostnames (\(certificates.hostnames.count))").font(.subheadline.weight(.semibold))
             ForEach(certificates.hostnames.prefix(100), id: \.self) { host in
@@ -292,8 +292,8 @@ private struct PgpKeyDetail: View {
         VStack(alignment: .leading, spacing: 8) {
             KeyValueRow(label: "Fingerprint", value: key.fingerprint)
             KeyValueRow(label: "Algorithm", value: [key.algorithm, key.bits.map { "\($0) bits" }].compactMap { $0 }.joined(separator: ", "))
-            if let created = key.createdAt { KeyValueRow(label: "Created", value: created) }
-            if let expires = key.expiresAt { KeyValueRow(label: "Expires", value: expires) }
+            if let created = key.createdAt { KeyValueRow(label: "Created", value: EngineDate.display(created)) }
+            if let expires = key.expiresAt { KeyValueRow(label: "Expires", value: EngineDate.display(expires)) }
             Text("Confirmed user IDs").font(.subheadline.weight(.semibold))
             ForEach(key.userIds, id: \.self) { Text($0).font(.callout).textSelection(.enabled) }
             Text("\(key.keyserver) only lists an address after its owner confirms it by email.")
@@ -308,8 +308,8 @@ private struct WebArchiveDetail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            KeyValueRow(label: "First capture", value: archive.firstCapture)
-            KeyValueRow(label: "Latest capture", value: archive.lastCapture)
+            KeyValueRow(label: "First capture", value: EngineDate.display(archive.firstCapture))
+            KeyValueRow(label: "Latest capture", value: EngineDate.display(archive.lastCapture))
             if let url = URL(string: archive.archiveUrl) {
                 Link(destination: url) { Label("Browse captures", systemImage: "arrow.up.right.square") }.font(.callout)
             }

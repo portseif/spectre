@@ -38,27 +38,31 @@ private struct InvestigationTable: View {
                 Table(model.investigations, selection: $selection) {
                     TableColumn("Target") { investigation in
                         Label(investigation.target.value, systemImage: investigation.targetType.symbol)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
+                    .width(min: 100, ideal: 160)
                     TableColumn("Status") { investigation in
                         StatusBadge(status: investigation.status)
                     }
-                    .width(min: 120, ideal: 150)
+                    .width(min: 110, ideal: 140)
                     TableColumn("Findings") { investigation in
                         Text(investigation.findingsCount, format: .number).monospacedDigit()
                     }
-                    .width(70)
+                    .width(60)
                     TableColumn("Errors") { investigation in
                         Text(investigation.errors.count, format: .number).monospacedDigit()
                             .foregroundStyle(investigation.errors.isEmpty ? Theme.secondaryText : Theme.warning)
                     }
-                    .width(60)
+                    .width(50)
                     TableColumn("Started") { investigation in
                         Text(investigation.createdAt, format: .dateTime.month().day().hour().minute())
                     }
-                    .width(min: 120, ideal: 140)
+                    .width(min: 110, ideal: 130)
                     TableColumn("Purpose") { investigation in
-                        Text(investigation.purpose).lineLimit(1).foregroundStyle(.spectreSecondary)
+                        Text(investigation.purpose).lineLimit(1).foregroundStyle(.spectreSecondary).help(investigation.purpose)
                     }
+                    .width(min: 100, ideal: 160)
                 }
                 .contextMenu(forSelectionType: Investigation.ID.self) { identifiers in
                     if let identifier = identifiers.first, let investigation = model.investigations.first(where: { $0.id == identifier }) {

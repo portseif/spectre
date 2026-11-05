@@ -109,4 +109,22 @@ struct SupportTests {
         #expect(model.selection == .newInvestigation)
         #expect(model.draftTarget == DraftTarget(type: .username, value: "octo_x"))
     }
+
+    @MainActor
+    @Test func inspectingAnItemOpensTheInspector() {
+        let model = AppModel(engine: PreviewEngine())
+        let identity = PreviewData.graph.nodes[0]
+        #expect(model.isInspectorPresented == false)
+        model.inspect(.identity(identity))
+        #expect(model.isInspectorPresented)
+        #expect(model.inspector == .identity(identity))
+    }
+
+    @Test func engineDatesDisplayReadably() {
+        #expect(EngineDate.display("2024-06-14T20:31:17.984891Z").contains("2024"))
+        #expect(EngineDate.display("2024-06-14T20:31:17.984891Z").contains("T20") == false)
+        #expect(EngineDate.display("2019-07-16").contains("2019"))
+        #expect(EngineDate.display("2019-07-16").contains("-") == false)
+        #expect(EngineDate.display("sometime") == "sometime")
+    }
 }

@@ -31,6 +31,14 @@ enum EngineDate {
         fullDate.date(from: raw) ?? parse(raw)
     }
 
+    /// A timestamp or `YYYY-MM-DD` from the engine as a readable date, or the
+    /// raw text when it does not parse.
+    static func display(_ raw: String) -> String {
+        guard let date = day(from: raw) else { return raw }
+        let includesTime = raw.count > 10
+        return includesTime ? date.formatted(date: .abbreviated, time: .shortened) : date.formatted(date: .abbreviated, time: .omitted)
+    }
+
     static func format(_ date: Date) -> String {
         internetDateTime.string(from: date)
     }

@@ -392,7 +392,7 @@ struct BreachReportContent: View {
                         HStack {
                             Text(breach.title).font(.headline)
                             Spacer()
-                            Button("Inspect") { model.inspector = .breach(breach) }.buttonStyle(.link)
+                            Button("Inspect") { model.inspect(.breach(breach)) }.buttonStyle(.link)
                         }
                         BreachIncidentDetail(incident: breach)
                     }
@@ -447,7 +447,7 @@ private struct BreachCatalogView: View {
             await search()
         }
         .onChange(of: selection) { _, identifier in
-            if let breach = result.breaches.first(where: { $0.id == identifier }) { model.inspector = .breach(breach) }
+            if let breach = result.breaches.first(where: { $0.id == identifier }) { model.inspect(.breach(breach)) }
         }
     }
 

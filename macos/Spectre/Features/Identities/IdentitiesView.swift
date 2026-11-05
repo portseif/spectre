@@ -24,7 +24,7 @@ struct IdentitiesView: View {
         }
         // Report a bounded minimum so the split view keeps room for the
         // sidebar and inspector (the canvas would otherwise claim its ideal).
-        .frame(minWidth: 620, maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Identities")
         .onAppear {
             if investigationID == nil {
@@ -50,8 +50,8 @@ private struct GraphControls: View {
                 }
             }
             .labelsHidden()
-            .frame(maxWidth: 320)
-            Spacer()
+            .frame(minWidth: 140, maxWidth: 320)
+            Spacer(minLength: 8)
             Menu {
                 ForEach(IdentityKind.allCases) { kind in
                     Toggle(kind.label, isOn: Binding(
@@ -101,20 +101,21 @@ private struct IdentityWorkspace: View {
                 selectedNode: $selectedNode,
                 onSelectNode: { node in
                     if let findingID = node.findingId, let finding = session.findings.first(where: { $0.id == findingID }) {
-                        model.inspector = .finding(finding)
+                        model.inspect(.finding(finding))
                     } else {
-                        model.inspector = .identity(node)
+                        model.inspect(.identity(node))
                     }
                 },
                 onSelectEdge: { edge in
                     let nodes = session.graph.nodes
-                    model.inspector = .relationship(edge, source: nodes.first { $0.id == edge.sourceIdentity }, target: nodes.first { $0.id == edge.targetIdentity })
+                    model.inspect(.relationship(edge, source: nodes.first { $0.id == edge.sourceIdentity }, target: nodes.first { $0.id == edge.targetIdentity }))
                 }
             )
-            .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minWidth: 220, maxWidth: .infinity, maxHeight: .infinity)
             Divider()
+            // Shares the width with the graph and stops growing at 380 points.
             RelationshipList(session: session)
-                .frame(width: 340)
+                .frame(minWidth: 220, idealWidth: 320, maxWidth: 380)
         }
     }
 }

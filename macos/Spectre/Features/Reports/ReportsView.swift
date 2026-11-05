@@ -24,13 +24,23 @@ struct ReportsView: View {
                         Text("\(investigation.target.value) · \(investigation.createdAt.formatted(date: .abbreviated, time: .shortened))").tag(UUID?.some(investigation.id))
                     }
                 }
-                .frame(maxWidth: 380)
-                Spacer()
-                Button { export(.pdf) } label: { Label("Export PDF", systemImage: "doc.richtext") }
-                Button { export(.json) } label: { Label("Export JSON", systemImage: "curlybraces") }
-                Button { export(.csv) } label: { Label("Export CSV", systemImage: "tablecells") }
-                Divider().frame(height: 20)
+                .frame(minWidth: 160, maxWidth: 380)
+                Spacer(minLength: 8)
+                Menu {
+                    Button { export(.pdf) } label: { Label("PDF Report", systemImage: "doc.richtext") }
+                    Button { export(.json) } label: { Label("JSON Bundle", systemImage: "curlybraces") }
+                    Button { export(.csv) } label: { Label("CSV Findings", systemImage: "tablecells") }
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                } primaryAction: {
+                    export(.pdf)
+                }
+                .menuStyle(.button)
+                .fixedSize()
+                .help("Export the PDF report, or choose JSON or CSV from the menu")
+                .disabled(investigationID == nil)
                 Button { isImporting = true } label: { Label("Import…", systemImage: "square.and.arrow.down") }
+                    .fixedSize()
             }
             .disabled(isGenerating)
             .padding(12)

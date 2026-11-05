@@ -9,7 +9,7 @@ struct SpectreApp: App {
             RootView()
                 .environment(model)
                 .task { await model.bootstrap() }
-                .frame(minWidth: 1240, minHeight: 720)
+                .frame(minWidth: 880, minHeight: 580)
         }
         .defaultSize(width: 1440, height: 900)
         .windowToolbarStyle(.unified)

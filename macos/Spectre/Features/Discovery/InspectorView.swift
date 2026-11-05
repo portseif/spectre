@@ -10,8 +10,7 @@ struct InspectorView: View {
             VStack(alignment: .leading, spacing: 18) {
                 switch item {
                 case .none:
-                    ContentUnavailableView("Nothing selected", systemImage: "sidebar.trailing", description: Text("Select a finding, relationship, or graph node to see its evidence and provenance."))
-                        .padding(.top, 60)
+                    EmptyInspector()
                 case .finding(let finding):
                     FindingInspector(finding: finding)
                 case .relationship(let relationship, let source, let target):
@@ -40,6 +39,24 @@ struct InspectorView: View {
         if incident.isStealerLog { items.append("Scan devices for information-stealing malware before rotating credentials.") }
         items.append("Enable multi-factor authentication wherever it is available.")
         return items
+    }
+}
+
+private struct EmptyInspector: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "sidebar.trailing")
+                .font(.title2)
+                .foregroundStyle(.spectreSecondary)
+                .accessibilityHidden(true)
+            Text("Nothing selected").font(.headline)
+            Text("Select a finding, relationship, or graph node to see its evidence and provenance.")
+                .font(.callout)
+                .foregroundStyle(.spectreSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 48)
     }
 }
 
@@ -167,7 +184,7 @@ private struct AssociatedRecords: View {
                         let otherID = edge.sourceIdentity == node.id ? edge.targetIdentity : edge.sourceIdentity
                         let other = graph.nodes.first { $0.id == otherID }
                         Button {
-                            model.inspector = .relationship(edge, source: graph.nodes.first { $0.id == edge.sourceIdentity }, target: graph.nodes.first { $0.id == edge.targetIdentity })
+                            model.inspect(.relationship(edge, source: graph.nodes.first { $0.id == edge.sourceIdentity }, target: graph.nodes.first { $0.id == edge.targetIdentity }))
                         } label: {
                             HStack {
                                 Text(other?.label ?? "Unknown").lineLimit(1)
