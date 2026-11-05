@@ -63,4 +63,8 @@ scripts/   build, test, package, and the Xcode build phase for Rust
 
 ## License
 
-MIT. Breach data comes from Have I Been Pwned under CC BY 4.0.
+Spectre is dual licensed under the MIT License or the Apache License 2.0, at your option. See [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE).
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in Spectre by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+Breach data comes from Have I Been Pwned under CC BY 4.0.
