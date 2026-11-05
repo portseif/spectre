@@ -1,20 +1,75 @@
 # Rust
 rust/target/
+target/
+**/*.rs.bk
+*.pdb
+# Cargo.lock stays committed: the workspace builds binaries (CLI, static lib).
 
-# Xcode
+# Xcode / SwiftUI
 build/
 DerivedData/
 xcuserdata/
 *.xcuserstate
 *.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+timeline.xctimeline
+playground.xcworkspace
+*.xcresult
+**/xcshareddata/WorkspaceSettings.xcsettings
 macos/Spectre.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
-# Local data — never commit investigations or credentials
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# Local data. Never commit investigations, backups, or exports.
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+*.sqlite3
+spectre-backup*
+spectre-*.pdf
+spectre-*.csv
+spectre-*.json
+!tests/fixtures/**/*.json
+
+# Secrets
 .env
 .env.*
+*.pem
+*.p12
+*.mobileprovision
+*.provisionprofile
+AuthKey_*.p8
 
-# macOS
+# AI assistant and agent files
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+AGENTS.md
+GEMINI.md
+.cursor/
+.cursorrules
+.windsurfrules
+.aider*
+.copilot/
+.codegraph/
+.continue/
+.mcp.json
+
+# Editors and OS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.idea/
+.vscode/
+*.swp
+*~

@@ -1,4 +1,4 @@
-//! `spectre` — command-line interface to the Spectre engine.
+//! `spectre`, the command-line interface to the Spectre engine.
 //!
 //! Credentials come from the environment (never from arguments):
 //! `SPECTRE_HIBP_API_KEY`, `SPECTRE_GITHUB_TOKEN`. The database defaults to
@@ -20,7 +20,7 @@ use uuid::Uuid;
 use zeroize::Zeroizing;
 
 const USAGE: &str = "\
-spectre — authorized OSINT investigations
+spectre: authorized OSINT investigations
 
 USAGE:
     spectre [--db PATH] [--json] <command> [args]
@@ -161,7 +161,7 @@ async fn investigate(engine: &Arc<Engine>, arguments: &[String], output: Output)
                         FindingData::Profile(profile) => profile.profile_url.clone(),
                         _ => finding.summary.clone().unwrap_or_default(),
                     };
-                    println!("  + [{}] {} — {}", finding.confidence.category.label(), finding.title, detail);
+                    println!("  + [{}] {}: {}", finding.confidence.category.label(), finding.title, detail);
                 }
                 InvestigationEventKind::ProviderFailed { failure } => {
                     println!("  ! {} failed ({:?}): {}", failure.provider_id, failure.code, failure.message);
@@ -174,7 +174,7 @@ async fn investigate(engine: &Arc<Engine>, arguments: &[String], output: Output)
                         "Finished: {status:?} in {} ms (startup {} ms, first finding {} ms, {} requests, cache {}/{})",
                         metrics.total_duration_ms,
                         metrics.startup_latency_ms,
-                        metrics.time_to_first_finding_ms.map(|value| value.to_string()).unwrap_or_else(|| "–".into()),
+                        metrics.time_to_first_finding_ms.map(|value| value.to_string()).unwrap_or_else(|| "none".into()),
                         metrics.http_requests,
                         metrics.cache_hits,
                         metrics.cache_hits + metrics.cache_misses

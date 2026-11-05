@@ -1,4 +1,4 @@
-//! Have I Been Pwned API v3 — https://haveibeenpwned.com/API/v3
+//! Have I Been Pwned API v3: https://haveibeenpwned.com/API/v3
 
 use async_trait::async_trait;
 use scraper::Html;
@@ -115,7 +115,7 @@ impl HibpClient {
         match status {
             401 => SpectreError::new(
                 ErrorCode::Unauthorized,
-                "Have I Been Pwned rejected the API key (401). Check the key in Settings → Providers.",
+                "Have I Been Pwned rejected the API key (401). Check the key in Settings > Providers.",
             ),
             403 => SpectreError::new(
                 ErrorCode::Unauthorized,
@@ -147,7 +147,7 @@ impl BreachProvider for HibpClient {
     async fn account_breaches(&self, context: &ProviderContext, account: &AuthorizedAccount) -> SpectreResult<Vec<BreachIncident>> {
         let key = context.credentials.get(ids::HIBP_API_KEY).ok_or_else(|| {
             SpectreError::credentials_missing(
-                "Account breach lookups need a Have I Been Pwned API key. Add one in Settings → Providers (https://haveibeenpwned.com/API/Key).",
+                "Account breach lookups need a Have I Been Pwned API key. Add one in Settings > Providers (https://haveibeenpwned.com/API/Key).",
             )
         })?;
         let mut url = self.url(&["breachedaccount", account.email()]);

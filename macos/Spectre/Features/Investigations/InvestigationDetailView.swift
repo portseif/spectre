@@ -374,10 +374,10 @@ private struct RunDetailsTab: View {
             if let metrics = investigation?.metrics {
                 Section("Performance") {
                     KeyValueRow(label: "Startup latency", value: "\(metrics.startupLatencyMs) ms")
-                    KeyValueRow(label: "Time to first finding", value: metrics.timeToFirstFindingMs.map { "\($0) ms" } ?? "—")
+                    KeyValueRow(label: "Time to first finding", value: metrics.timeToFirstFindingMs.map { "\($0) ms" } ?? "None")
                     KeyValueRow(label: "Total duration", value: "\(metrics.totalDurationMs) ms")
                     KeyValueRow(label: "HTTP requests", value: "\(metrics.httpRequests)")
-                    KeyValueRow(label: "Cache hit rate", value: metrics.cacheHitRate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "—")
+                    KeyValueRow(label: "Cache hit rate", value: metrics.cacheHitRate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "None")
                 }
                 Section("Provider latency") {
                     ForEach(metrics.providerLatencies.sorted { $0.latencyMs > $1.latencyMs }, id: \.providerId) { latency in

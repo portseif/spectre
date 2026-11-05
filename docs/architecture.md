@@ -1,128 +1,136 @@
 # Architecture
 
-Spectre is a native macOS app (SwiftUI, Swift 6) on top of a reusable Rust engine (Tokio, Reqwest, SQLx/SQLite). The engine has no dependency on the app. It is embedded through a small C ABI and also drives the `spectre` CLI.
+Spectre has two halves. The macOS app is SwiftUI on Swift 6. The engine is a Rust workspace (Tokio, Reqwest, SQLx on SQLite) that knows nothing about the app. The app embeds it through a small C ABI, and the `spectre` CLI uses it directly.
 
 ```
-┌──────────────────────── macOS app (SwiftUI) ────────────────────────┐
-│ Features/*  ── AppModel / InvestigationViewModel (@MainActor @Observable)
-│                    │ EngineClient protocol (mockable)
-│                    ▼
-│ Services/RustEngine ── background DispatchQueue ── C ABI (JSON in/out)
-│ Services/KeychainStore (API keys)   Services/ReportGenerator (PDF)
-└──────────────────────────────────┬──────────────────────────────────┘
-                                   │ spectre_ffi.h
-┌──────────────────────────────────▼──────────────── Rust workspace ──┐
-│ spectre-ffi        C ABI, Tokio runtime, panic guard                 │
-│ spectre-discovery  Engine: orchestration, events, JSON API (call)    │
-│   ├─ spectre-providers   username / email / phone / domain adapters  │
-│   ├─ spectre-breach      HIBP client, catalog provider, risk         │
-│   ├─ spectre-audit       Pwned Passwords k-anon, hash inventory      │
-│   ├─ spectre-correlation evidence-based identity graph               │
-│   └─ spectre-storage     SQLite, migrations, export/import, backup   │
-│ spectre-core       model, validation, provider trait, HTTP policy    │
-│ spectre-cli        command-line front end over the same engine       │
-└──────────────────────────────────────────────────────────────────────┘
++------------------------- macOS app (SwiftUI) --------------------------+
+| Features/*  -->  AppModel, InvestigationViewModel (@MainActor @Observable)
+|                     |  EngineClient protocol (mockable in tests)
+|                     v
+| Services/RustEngine  -->  background DispatchQueue  -->  C ABI (JSON)
+| Services/KeychainStore (API keys)   Services/ReportGenerator (PDF)
++-----------------------------------+-------------------------------------+
+                                    |  spectre_ffi.h
++-----------------------------------v---------------- Rust workspace -----+
+| spectre-ffi          C ABI, Tokio runtime, panic guard                  |
+| spectre-discovery    the engine: orchestration, events, JSON API        |
+|   spectre-providers    username, email, phone and domain adapters       |
+|   spectre-breach       HIBP client, catalog provider, risk assessment   |
+|   spectre-audit        Pwned Passwords check, hash inventory            |
+|   spectre-correlation  evidence-based identity graph                    |
+|   spectre-storage      SQLite, migrations, export/import, backup        |
+| spectre-core         model, validation, provider trait, HTTP policy     |
+| spectre-cli          command-line front end over the same engine        |
++-------------------------------------------------------------------------+
 ```
 
-## Swift ↔ Rust boundary
+## Swift and Rust
 
-**Decision: a hand-written C ABI that exchanges JSON. UniFFI is not used.**
+The boundary is a hand-written C ABI that passes JSON. I looked at UniFFI first and decided against it. The API is coarse: about 40 methods, each called a handful of times per user action, and the payload sizes don't matter next to network latency. UniFFI would add a code generation step plus generated Swift files to keep in sync, and its async and callback support makes the build more involved. A single JSON dispatcher, tested in Rust and decoded into Swift `Codable` types, is simpler and nearly as safe.
 
-UniFFI was evaluated. The API is coarse-grained (roughly 40 methods, each called a few times per user action, with payloads dominated by network latency). For an API like that, UniFFI adds a code-generation step and generated Swift sources to keep in sync, and its async/callback support complicates the build. It buys little type safety over a single JSON dispatcher that is unit-tested in Rust and decoded into Swift `Codable` mirrors. JSON overhead is negligible next to network I/O.
-
-The ABI has seven functions (`rust/crates/spectre-ffi/include/spectre_ffi.h`):
+The header (`rust/crates/spectre-ffi/include/spectre_ffi.h`) exposes seven functions:
 
 | Function | Purpose |
 |---|---|
-| `spectre_engine_open(options_json, &error)` | Create the engine (owns a 4-worker Tokio runtime) |
-| `spectre_engine_call(engine, method, params_json)` | JSON API dispatch (`Engine::call`) |
-| `spectre_engine_poll_events(engine, id, max, timeout_ms)` | Blocking wait for streamed events |
-| `spectre_check_password(engine, bytes, len)` | Password check; bytes, never JSON |
+| `spectre_engine_open(options_json, &error)` | Create the engine, which owns a 4-worker Tokio runtime |
+| `spectre_engine_call(engine, method, params_json)` | Dispatch a JSON API call (`Engine::call`) |
+| `spectre_engine_poll_events(engine, id, max, timeout_ms)` | Wait for streamed events, blocking up to the timeout |
+| `spectre_check_password(engine, bytes, len)` | Password check. Takes raw bytes, never JSON |
 | `spectre_string_free`, `spectre_engine_close`, `spectre_version` | Lifecycle |
 
-Responses are envelopes: `{"ok": …}` or `{"error": {"code", "message"}}`. Error codes are stable (`invalid_input`, `authorization_required`, `credentials_missing`, `rate_limited`, `policy_violation`, …). Every entry point is wrapped in `catch_unwind`.
+Every response is an envelope, either `{"ok": ...}` or `{"error": {"code", "message"}}`. The error codes are stable strings such as `invalid_input`, `authorization_required`, `credentials_missing`, `rate_limited` and `policy_violation`. Each entry point runs inside `catch_unwind`, so a Rust panic comes back as an `internal` error instead of crashing the app.
 
-On the Swift side, `RustEngine` runs every blocking call on a private concurrent `DispatchQueue` and bridges it with continuations, so nothing touches the main actor. Event streaming is an `AsyncThrowingStream` fed by a background loop that calls `spectre_engine_poll_events` with a 250 ms timeout.
+`RustEngine` on the Swift side runs every blocking call on a private concurrent `DispatchQueue` and bridges it with a continuation, so the main actor never waits on Rust. Event streaming is an `AsyncThrowingStream` fed by a background loop that calls `spectre_engine_poll_events` with a 250 ms timeout.
 
 ### JSON API
 
-`Engine::call(method, params)` in `spectre-discovery/src/api.rs` is the single dispatcher. Methods are grouped by namespace: `investigation.*` (start, cancel, get, list, delete, events, correlate, export_json, export_csv, import), `relationship.decide`, `verification.*`, `breach.*`, `audit.*`, `settings.*`, `providers.*`, `credentials.*`, `privacy.purge`, `storage.*`, `dashboard.stats`, `engine.diagnostics`, and `target.validate`.
+All methods go through `Engine::call(method, params)` in `spectre-discovery/src/api.rs`. They are grouped by prefix:
 
-## Investigation lifecycle
+- `investigation.*`: start, cancel, get, list, delete, events, correlate, export_json, export_csv, import
+- `relationship.decide`
+- `verification.*`, `breach.*`, `audit.*`
+- `settings.*`, `providers.*`, `credentials.*`
+- `privacy.purge`, `storage.*`, `dashboard.stats`, `engine.diagnostics`, `target.validate`
 
-1. `investigation.start` validates and normalizes the target, requires an authorization record of at least 10 characters, selects enabled providers that support the target type, persists the investigation, and writes an audit event.
-2. A Tokio task fans out to the providers through `FuturesUnordered`. A **global semaphore** (`max_concurrency`, default 4) bounds concurrent provider work across all investigations. Each provider also has a deadline (`provider_timeout_secs`) and a cancellation token.
-3. Each provider result is persisted **immediately** and emitted as events (`provider_started`, `finding_discovered`, `provider_completed` / `provider_failed`, `progress`), so the UI updates before slower providers finish.
-4. When every provider is done, correlation runs. It writes the identity graph and updates profile-finding confidence, then emits `correlation_updated` and finally `finished` with metrics.
-5. Final status: `completed` (no failures), `partially_completed` (some failures), `failed` (every provider failed or was cancelled), or `cancelled`. Investigations left running by a crashed process are marked `failed` on the next launch.
+## How an investigation runs
 
-Events live in an in-memory per-investigation queue (`events.rs`). Producers never block. Consumers wait on a `Condvar` (FFI) or through `spawn_blocking` (CLI). A queue is removed once its terminal event has been drained.
+1. `investigation.start` normalizes the target and refuses to go further without an authorization record of at least 10 characters. It picks the enabled providers that support the target type, saves the investigation and writes an audit event.
+2. A Tokio task starts every provider at once through `FuturesUnordered`. A global semaphore (`max_concurrency`, 4 by default) caps how many actually do work at the same time, across all investigations. Each provider also gets a deadline (`provider_timeout_secs`) and a cancellation token.
+3. As each provider returns, its findings are saved right away and emitted as events (`provider_started`, `finding_discovered`, `provider_completed` or `provider_failed`, `progress`). The UI shows them before the slower providers finish.
+4. After the last provider, correlation runs. It writes the identity graph and updates the confidence of profile findings, then the engine emits `correlation_updated` and finally `finished` with the run's metrics.
+5. The final status is `completed` when nothing failed, `partially_completed` when some providers failed, `failed` when all of them failed or were cancelled, and `cancelled` when the user stopped the run. If the process dies mid-run, the next launch marks that investigation `failed`.
+
+Events sit in an in-memory queue per investigation (`events.rs`). Producers never block. The FFI waits on a `Condvar` and the CLI waits through `spawn_blocking`. A queue is dropped once its last event has been read.
 
 ### Metrics
 
-Every run records startup latency (request to first provider dispatch), time to first finding, total duration, per-provider latency and outcome, HTTP request count, and cache hits and misses. They appear under *Run Details* in the app and in `spectre bench`.
+Each run records:
 
-Measured on this machine (2026-11-05, release build, live APIs, username with 13 providers):
+- startup latency (from the request to the first provider dispatch)
+- time to first finding and total duration
+- latency and outcome for each provider
+- HTTP request count, cache hits and cache misses
+
+You can see them under Run Details in the app or with `spectre bench`.
+
+These numbers come from this machine on 2026-11-05, using a release build against the live APIs with a username and 13 providers:
 
 | Run | Startup | First finding | Total | Requests | Cache hit rate |
 |---|---|---|---|---|---|
 | Cold | 1 ms | 745 ms | 2,371 ms | 14 | 0% |
-| Warm (cache) | 0 ms | 0 ms | 5–7 ms | 0 | 100% |
+| Warm (cached) | 0 ms | 0 ms | 5 to 7 ms | 0 | 100% |
 
-Peak RSS of the CLI process across all three runs was 31 MB. GitHub was the slowest provider (2.3 s).
+The CLI process peaked at 31 MB of resident memory over the three runs. GitHub was the slowest provider at 2.3 s.
 
-## HTTP layer (`spectre-core/src/http.rs`)
+## HTTP layer
 
-- One shared `reqwest::Client` (connection pooling, rustls with the platform verifier).
-- An **endpoint allowlist**: HTTPS only, port 443, no IP literals, no URL credentials. Only hosts that providers declare are allowed. Redirects are re-checked against the same policy.
-- Per-provider **rate limiting** (even spacing, configurable per provider).
-- **Retries** on timeouts, connection errors, 429, and 5xx. Backoff is exponential with "equal jitter", capped at 8 s. `Retry-After` is honored up to 30 s; beyond that the 429 goes back to the provider instead of stalling the run.
-- A bounded in-memory **response cache** (TTL configurable, 2xx and 404 only, 1,024 entries). Ownership challenges and breach lookups bypass it.
-- `fetch_public_web` for the investigated domain's own website: DNS is resolved first, every address must be public, the connection is pinned to those addresses to prevent DNS rebinding, and redirects are followed manually and re-validated.
-- Body size caps of 8 MiB for APIs and 1 MiB for web pages.
+`spectre-core/src/http.rs` holds the one HTTP client everything shares.
 
-## Identity correlation (`spectre-correlation`)
+- A single `reqwest::Client` gives connection pooling. TLS is rustls with the platform verifier, so certificates are checked against the macOS trust store.
+- An endpoint allowlist only permits HTTPS on port 443 to hosts that a provider declared. IP literals and credentials in URLs are refused, and every redirect hop is checked against the same rules.
+- Rate limiting is per provider and spaces requests evenly. Each provider's limit can be changed in Settings.
+- Timeouts, connection errors, 429 and 5xx responses are retried with exponential backoff and jitter, capped at 8 s. A `Retry-After` of up to 30 s is honored. Anything longer goes back to the provider as a rate-limit error so the run doesn't stall.
+- Responses are cached in memory (2xx and 404 only, 1,024 entries, TTL from settings). Ownership challenges and breach lookups skip the cache.
+- `fetch_public_web` is a separate path for the investigated domain's own website. It resolves DNS first and requires every address to be public. It then pins the connection to those addresses so DNS rebinding can't redirect it, and follows redirects by hand, checking each one.
+- Response bodies are capped at 8 MiB for APIs and 1 MiB for web pages.
 
-Findings become an identity graph. Nodes are usernames, profiles, emails, phones, domains, websites, and breaches. Each edge carries explainable evidence items, and weights combine with a noisy-OR, `1 − Π(1 − wᵢ)`.
+## Identity correlation
+
+`spectre-correlation` turns findings into a graph. Nodes are usernames, profiles, emails, phones, domains, websites and breaches. Every edge carries a list of evidence items with weights, and the weights combine as `1 - product(1 - w_i)`, so independent signals reinforce each other without ever reaching 1.0.
 
 | Signal | Weight |
 |---|---|
 | Exact username match | 0.35 |
-| Explicit link (profile links to the URL or handle) | 0.60 |
-| Platform-verified link (Keybase proof, Mastodon `rel="me"`, Gravatar verified account) | 0.75 |
-| Mutual link | 0.40 |
-| Corroborating link with another target-matching profile | 0.45 (0.60 if verified) |
-| Shared public email | 0.60 |
-| Shared website | 0.25 |
-| Matching display name (two or more words or eight or more characters) | 0.15 |
+| Explicit link (the profile links to the URL or handle) | 0.60 |
+| Link verified by the platform (Keybase proof, Mastodon rel="me", Gravatar verified account) | 0.75 |
+| Both profiles link to each other | 0.40 |
+| Linked to another profile that also matches the target | 0.45, or 0.60 if platform-verified |
+| Same public email | 0.60 |
+| Same website | 0.25 |
+| Same display name (two or more words, or at least 8 characters) | 0.15 |
 | Gravatar profile registered to the investigated address | 0.80 |
 
-Categories, applied in order:
+The category is decided in this order:
 
-1. An investigator rejection gives **Unrelated**. An investigator confirmation or verified ownership gives **Confirmed**.
-2. A score of at least 0.75 *plus* at least one explicit-link signal gives **Strong Evidence**.
-3. A score of at least 0.40 gives **Possible**. Anything lower is **Weak Evidence**.
+1. If the investigator rejected the relationship, it is Unrelated. If they confirmed it, or ownership is verified, it is Confirmed.
+2. A score of 0.75 or more counts as Strong Evidence, but only when at least one signal is an explicit link.
+3. A score of 0.40 or more is Possible. Anything lower is Weak Evidence.
 
-A username match alone (0.35) is therefore always Weak Evidence. Coincidental signals such as names and websites can never reach Strong Evidence without an explicit link. Identity and relationship IDs are UUIDv5 values derived from canonical values, so investigator decisions survive re-correlation.
+A username match alone scores 0.35, so it always stays at Weak Evidence. Coincidences like a shared name or website can't push a relationship to Strong Evidence without an explicit link. Identity and relationship IDs are UUIDv5 values built from canonical values, which is why investigator decisions survive when correlation reruns.
 
-## Storage (`spectre-storage`)
+## Storage
 
-SQLite in WAL mode with `foreign_keys=ON`, `secure_delete=ON`, file mode `0600`, and embedded versioned migrations (`migrations/0001_initial.sql`).
+`spectre-storage` uses SQLite in WAL mode with `foreign_keys=ON` and `secure_delete=ON`. The database file is created with mode 0600. Migrations are embedded and versioned (`migrations/0001_initial.sql`).
 
-Tables: `investigations`, `investigation_targets`, `investigation_errors`, `findings`, `finding_sources`, `profiles`, `identities`, `identity_relationships`, `email_addresses`, `phone_numbers`, `domains`, `breach_incidents`, `breach_exposures`, `provider_configs`, `audit_events`, `engine_settings`.
+Tables: `investigations`, `investigation_targets`, `investigation_errors`, `findings`, `finding_sources`, `profiles`, `identities`, `identity_relationships`, `email_addresses`, `phone_numbers`, `domains`, `breach_incidents`, `breach_exposures`, `provider_configs`, `audit_events` and `engine_settings`.
 
-Investigation-scoped tables cascade on delete. `audit_events` deliberately has no foreign key, so the accountability trail outlives deletion; it never contains passwords, hashes, or keys.
+Deleting an investigation cascades to every table scoped to it. `audit_events` has no foreign key on purpose, so the record that an investigation existed outlives it. Audit events never hold passwords, hashes or keys.
 
-Other storage features:
+After a delete the engine runs `PRAGMA wal_checkpoint(TRUNCATE)` so the overwritten pages don't linger in the WAL. Backups use `VACUUM INTO`. A restore checks the backup's integrity and schema version before replacing the database file. Exports are versioned bundles (`spectre.investigation` v1), and imports re-validate every target.
 
-- Deletes are followed by `PRAGMA wal_checkpoint(TRUNCATE)`.
-- Backups use `VACUUM INTO`.
-- Restores validate integrity and schema version before replacing the file.
-- Exports are versioned bundles (`spectre.investigation` v1). Imports re-validate targets.
+## The macOS app
 
-## macOS app
-
-- `AppModel` (root) and `InvestigationViewModel` (per investigation, persisted per ID) are `@MainActor @Observable`. Derived collections such as grouped finding sections are cached as stored properties.
-- Layout: `NavigationSplitView` (sidebar plus detail) with `.inspector` attached to the detail column.
-- The identity graph is a native `Canvas` with a deterministic Fruchterman–Reingold layout computed off the main actor. It supports pinch and button zoom, drag to pan, click to select nodes or edges, kind and confidence filters, and collapsing leaf neighbors. The relationship list beside it is the accessible alternative.
-- PDF reports use Core Text pagination into a `CGContext` PDF and are previewed with PDFKit. JSON and CSV come from the engine. CSV cells are neutralized against formula injection.
+- `AppModel` holds app-wide state and `InvestigationViewModel` holds one investigation. Both are `@MainActor @Observable`, and there is one persisted view model per investigation ID. Derived data such as the grouped finding sections is cached as stored properties rather than computed on every read.
+- The window is a `NavigationSplitView` with a sidebar and a detail column, and the `.inspector` is attached to the detail column.
+- The identity graph is a native `Canvas`. Its Fruchterman-Reingold layout is deterministic and computed off the main actor. You can pinch or use buttons to zoom, drag to pan, click nodes or edges, filter by kind and confidence, and collapse leaf neighbors. The relationship list beside the graph is the accessible version of the same data.
+- PDF reports are paginated with Core Text into a `CGContext` PDF and previewed with PDFKit. JSON and CSV come from the engine, and CSV cells are escaped so spreadsheets don't run them as formulas.

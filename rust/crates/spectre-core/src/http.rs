@@ -2,7 +2,7 @@
 //!
 //! All outbound traffic goes through [`HttpClient`], which provides:
 //!
-//! * an endpoint allowlist ([`EndpointPolicy`]) — HTTPS only, no IP literals,
+//! * an endpoint allowlist ([`EndpointPolicy`]): HTTPS only, no IP literals,
 //!   no credentials in URLs, only hosts registered by providers (SSRF guard);
 //! * redirect validation against the same policy;
 //! * per-provider rate limiting;

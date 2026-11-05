@@ -1,4 +1,4 @@
-//! Pwned Passwords k-anonymity range API —
+//! Pwned Passwords k-anonymity range API, documented at
 //! https://haveibeenpwned.com/API/v3#PwnedPasswords
 
 use chrono::{DateTime, Utc};

@@ -47,7 +47,7 @@ private struct GeneralSettings: View {
                     Text(AppModel.databaseURL.path(percentEncoded: false)).textSelection(.enabled).font(.caption.monospaced())
                 }
                 Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([AppModel.databaseURL]) }
-                Text("Investigations are stored in Spectre's sandboxed container. Use Advanced → Back Up to copy the database elsewhere.")
+                Text("Investigations are stored in Spectre's sandboxed container. Use Advanced > Back Up to copy the database elsewhere.")
                     .font(.caption)
                     .foregroundStyle(.spectreSecondary)
             }

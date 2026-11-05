@@ -1,12 +1,12 @@
 //! Password security auditing, kept separate from discovery.
 //!
-//! * [`pwned_passwords`] — Workflow A: check a password the user voluntarily
+//! * [`pwned_passwords`]: Workflow A, check a password the user voluntarily
 //!   supplies, using the Pwned Passwords k-anonymity range API. Only the first
 //!   five hex characters of the SHA-1 hash leave the device.
-//! * [`hash_inventory`] — Workflow B (initial scope): inventory the storage
+//! * [`hash_inventory`]: Workflow B (initial scope), inventory the storage
 //!   schemes of password hashes an authorized administrator supplies and flag
 //!   legacy or unsalted storage. No cracking, no plaintext recovery.
-//! * [`offline`] — the isolated interface reserved for a future, separately
+//! * [`offline`]: the isolated interface reserved for a future, separately
 //!   authorized offline auditing backend. No implementation ships.
 
 pub mod hash_inventory;

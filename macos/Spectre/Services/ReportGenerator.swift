@@ -17,7 +17,7 @@ enum ReportGenerator {
         var mediaBox = CGRect(origin: .zero, size: pageSize)
         guard let consumer = CGDataConsumer(data: data as CFMutableData),
               let context = CGContext(consumer: consumer, mediaBox: &mediaBox, [
-                  kCGPDFContextTitle: "Spectre report – \(detail.investigation.target.value)",
+                  kCGPDFContextTitle: "Spectre report: \(detail.investigation.target.value)",
                   kCGPDFContextCreator: "Spectre \(Bundle.main.shortVersion)",
               ] as CFDictionary)
         else { return Data() }
@@ -100,14 +100,14 @@ enum ReportGenerator {
         builder.heading("3. Public profiles discovered")
         if profiles.isEmpty { builder.paragraph("No public profiles were found.") }
         for (finding, profile) in profiles {
-            builder.bullet("\(profile.platform) — \(profile.username) [\(finding.confidence.category.label)]", detail: profile.profileUrl)
+            builder.bullet("\(profile.platform): \(profile.username) [\(finding.confidence.category.label)]", detail: profile.profileUrl)
         }
 
         builder.heading("4. Confirmed identity associations")
         builder.paragraph("Confirmed means ownership was verified or an investigator confirmed the association after reviewing evidence.", secondary: true)
         if confirmedEdges.isEmpty { builder.paragraph("None.") }
         for edge in confirmedEdges {
-            builder.bullet("\(nodes[edge.sourceIdentity]?.label ?? "?") → \(nodes[edge.targetIdentity]?.label ?? "?") (\(edge.relationship.label))", detail: edge.evidence.map(\.description).joined(separator: "; "))
+            builder.bullet("\(nodes[edge.sourceIdentity]?.label ?? "?") to \(nodes[edge.targetIdentity]?.label ?? "?") (\(edge.relationship.label))", detail: edge.evidence.map(\.description).joined(separator: "; "))
         }
 
         builder.heading("5. Inferred associations (not confirmed)")
@@ -115,7 +115,7 @@ enum ReportGenerator {
         if inferredEdges.isEmpty { builder.paragraph("None.") }
         for edge in inferredEdges.sorted(by: { $0.confidence > $1.confidence }) {
             builder.bullet(
-                "\(nodes[edge.sourceIdentity]?.label ?? "?") → \(nodes[edge.targetIdentity]?.label ?? "?") — \(edge.category.label), score \(String(format: "%.2f", edge.confidence))",
+                "\(nodes[edge.sourceIdentity]?.label ?? "?") to \(nodes[edge.targetIdentity]?.label ?? "?"): \(edge.category.label), score \(String(format: "%.2f", edge.confidence))",
                 detail: edge.evidence.map(\.description).joined(separator: "; ")
             )
         }
@@ -151,7 +151,7 @@ enum ReportGenerator {
         securityFindings.forEach { builder.bullet($0) }
 
         builder.heading("8. Confidence classifications")
-        builder.paragraph("Scores are explainable evidence weights combined as 1 − Π(1 − wᵢ), not calibrated probabilities.", secondary: true)
+        builder.paragraph("Scores are explainable evidence weights combined as 1 - product(1 - w), not calibrated probabilities.", secondary: true)
         for category in ConfidenceCategory.allCases.reversed() {
             let count = detail.findings.filter { $0.confidence.category == category }.count
             builder.field(category.label, "\(count) finding(s)")
@@ -181,7 +181,7 @@ enum ReportGenerator {
         if let started = investigation.startedAt { builder.field("Started", EngineDate.format(started)) }
         if let completed = investigation.completedAt { builder.field("Completed", EngineDate.format(completed)) }
         if let metrics = investigation.metrics {
-            builder.field("Duration", "\(metrics.totalDurationMs) ms (first finding after \(metrics.timeToFirstFindingMs.map { "\($0) ms" } ?? "—"))")
+            builder.field("Duration", "\(metrics.totalDurationMs) ms (first finding after \(metrics.timeToFirstFindingMs.map { "\($0) ms" } ?? "none"))")
         }
         return builder.output
     }
@@ -217,7 +217,7 @@ enum ReportGenerator {
             output.append(line)
         }
         func bullet(_ text: String, detail: String? = nil) {
-            append("• \(text)", font: .systemFont(ofSize: 10), style: paragraphStyle(indent: 8))
+            append("- \(text)", font: .systemFont(ofSize: 10), style: paragraphStyle(indent: 8))
             if let detail, !detail.isEmpty {
                 append(detail, font: .systemFont(ofSize: 8.5), color: .darkGray, style: paragraphStyle(indent: 18))
             }

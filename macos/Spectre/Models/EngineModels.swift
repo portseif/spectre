@@ -932,7 +932,7 @@ enum JSONValue: Codable, Hashable, Sendable {
         case .string(let value): value
         case .number(let value): value.rounded() == value ? String(Int64(value)) : String(value)
         case .bool(let value): value ? "yes" : "no"
-        case .null: "—"
+        case .null: "none"
         case .array(let values): values.map(\.displayText).joined(separator: ", ")
         case .object(let values):
             values.sorted { $0.key < $1.key }.map { "\($0.key.humanizedKey): \($0.value.displayText)" }.joined(separator: " · ")
@@ -941,7 +941,7 @@ enum JSONValue: Codable, Hashable, Sendable {
 }
 
 extension String {
-    /// `publicRepositories` / `public_repositories` → `Public repositories`.
+    /// Turns `publicRepositories` or `public_repositories` into `Public repositories`.
     var humanizedKey: String {
         var words: [String] = []
         var current = ""

@@ -2,7 +2,7 @@
 //!
 //! A provider is an independent intelligence source. The investigation engine
 //! only depends on this trait, so new sources are added by implementing it and
-//! registering the provider — no engine changes required.
+//! registering the provider. The engine itself does not change.
 
 use std::sync::Arc;
 

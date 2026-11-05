@@ -21,7 +21,7 @@ struct KeychainStore: Sendable {
         let attributes: [String: Any] = [
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-            kSecAttrLabel as String: "Spectre – \(account)",
+            kSecAttrLabel as String: "Spectre: \(account)",
         ]
         var status = SecItemUpdate(query(account) as CFDictionary, attributes as CFDictionary)
         if status == errSecItemNotFound {

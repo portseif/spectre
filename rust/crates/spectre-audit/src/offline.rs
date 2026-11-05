@@ -6,7 +6,7 @@
 //!
 //! * run only on hashes an authorized administrator supplies for systems they
 //!   own or have written permission to test (recorded in [`AuditAuthorization`]);
-//! * report aggregate results only — never plaintext passwords, never which
+//! * report aggregate results only, never plaintext passwords or which
 //!   specific account matched which candidate;
 //! * never accept third-party breach datasets as input;
 //! * remain separate from username/email discovery.

@@ -15,7 +15,7 @@ use crate::common::{
 use crate::provider_metadata;
 
 // ---------------------------------------------------------------------------
-// GitHub — https://docs.github.com/rest/users/users#get-a-user
+// GitHub: https://docs.github.com/rest/users/users#get-a-user
 // ---------------------------------------------------------------------------
 
 pub struct GitHubProvider {
@@ -100,7 +100,7 @@ impl OsintProvider for GitHubProvider {
         if response.status == 403 && response.text().to_ascii_lowercase().contains("rate limit") {
             return Err(SpectreError::new(
                 ErrorCode::RateLimited,
-                "GitHub API rate limit reached. Add a GitHub token in Settings → Providers to raise the limit.",
+                "GitHub API rate limit reached. Add a GitHub token in Settings > Providers to raise the limit.",
             ));
         }
         let user: GitHubUser = response.ensure_success()?.json()?;
@@ -163,7 +163,7 @@ impl OsintProvider for GitHubProvider {
 }
 
 // ---------------------------------------------------------------------------
-// GitLab — https://docs.gitlab.com/api/users/#list-users
+// GitLab: https://docs.gitlab.com/api/users/#list-users
 // ---------------------------------------------------------------------------
 
 pub struct GitLabProvider {
@@ -233,7 +233,7 @@ impl OsintProvider for GitLabProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Codeberg (Forgejo) — https://codeberg.org/api/swagger#/user/userGet
+// Codeberg (Forgejo): https://codeberg.org/api/swagger#/user/userGet
 // ---------------------------------------------------------------------------
 
 pub struct CodebergProvider {

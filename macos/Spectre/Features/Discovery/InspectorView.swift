@@ -77,7 +77,7 @@ private struct FindingInspector: View {
                 ConfidenceBadge(category: finding.confidence.category)
                 VerificationBadge(status: finding.verificationStatus)
             }
-            Text(finding.isInferredAssociation ? "Inferred association — not proof of common ownership." : "Directly observed fact.")
+            Text(finding.isInferredAssociation ? "Inferred association. It is not proof of common ownership." : "Directly observed fact.")
                 .font(.caption)
                 .foregroundStyle(.spectreSecondary)
         }
@@ -212,7 +212,7 @@ private struct RelationshipInspector: View {
                     }
                 }
             }
-            Text("Weights combine as 1 − Π(1 − wᵢ). Strong Evidence additionally requires an explicit link.").font(.caption2).foregroundStyle(.spectreSecondary)
+            Text("Weights combine as 1 - product(1 - w). Strong Evidence also requires an explicit link.").font(.caption2).foregroundStyle(.spectreSecondary)
         }
     }
 }
@@ -234,13 +234,13 @@ private struct IdentityInspector: View {
     }
 }
 
-#Preview("Inspector – finding") {
+#Preview("Inspector: finding") {
     InspectorView(item: .finding(PreviewData.findings[0]))
         .environment(AppModel(engine: PreviewEngine()))
         .frame(width: 340, height: 800)
 }
 
-#Preview("Inspector – relationship") {
+#Preview("Inspector: relationship") {
     let graph = PreviewData.graph
     InspectorView(item: .relationship(graph.edges[0], source: graph.nodes[0], target: graph.nodes[1]))
         .environment(AppModel(engine: PreviewEngine()))

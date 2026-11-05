@@ -430,8 +430,8 @@ private struct BreachCatalogView: View {
             .padding(12)
             Table(result.breaches, selection: $selection) {
                 TableColumn("Breach") { breach in Text(breach.title) }
-                TableColumn("Domain") { breach in Text(breach.domain ?? "—").foregroundStyle(.spectreSecondary) }
-                TableColumn("Date") { breach in Text(breach.breachDate ?? "—").monospacedDigit() }.width(90)
+                TableColumn("Domain") { breach in Text(breach.domain ?? "None").foregroundStyle(.spectreSecondary) }
+                TableColumn("Date") { breach in Text(breach.breachDate ?? "Unknown").monospacedDigit() }.width(90)
                 TableColumn("Accounts") { breach in Text(breach.pwnCount, format: .number).monospacedDigit() }.width(110)
                 TableColumn("Passwords") { breach in
                     Image(systemName: breach.passwordDataExposed ? "key.fill" : "minus")

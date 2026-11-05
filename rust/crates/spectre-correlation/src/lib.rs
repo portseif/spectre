@@ -2,16 +2,16 @@
 //!
 //! Correlation turns an investigation's findings into an identity graph whose
 //! edges carry explicit, explainable evidence. Each evidence item has a weight;
-//! weights combine with a noisy-OR (`1 - Π(1 - wᵢ)`), so independent signals
+//! weights combine with a noisy-OR (`1 - product(1 - w_i)`), so independent signals
 //! reinforce each other without exceeding 1.0. Scores are evidence weights,
 //! not calibrated probabilities: the UI leads with the category.
 //!
 //! Category rules (applied in order):
-//! 1. Investigator rejection → `Unrelated`; investigator confirmation or
-//!    verified ownership → `Confirmed`.
-//! 2. Score ≥ [`STRONG_THRESHOLD`] *and* at least one explicit-link signal →
+//! 1. Investigator rejection gives `Unrelated`; investigator confirmation or
+//!    verified ownership gives `Confirmed`.
+//! 2. Score >= [`STRONG_THRESHOLD`] *and* at least one explicit-link signal gives
 //!    `StrongEvidence`. Coincidental signals alone never reach it.
-//! 3. Score ≥ [`POSSIBLE_THRESHOLD`] → `Possible`; otherwise `WeakEvidence`.
+//! 3. Score >= [`POSSIBLE_THRESHOLD`] gives `Possible`; otherwise `WeakEvidence`.
 //!
 //! The algorithm is deterministic: identity and relationship IDs are UUIDv5
 //! values derived from the investigation ID and canonical values, so
@@ -299,7 +299,7 @@ pub fn correlate(
         .map(|(_, _, key)| key.clone())
         .collect();
 
-    // Direct target ↔ profile evidence.
+    // Direct evidence between the target and each profile.
     for (finding, profile, key) in &profiles {
         let profile_node = profile_nodes[key];
         if let InvestigationTarget::Username(username) = target
@@ -437,7 +437,7 @@ pub fn correlate(
         }
     }
 
-    // Corroboration of target ↔ profile edges by other target-matching profiles.
+    // Corroborate target-to-profile edges with other target-matching profiles.
     for (_, profile, key) in &profiles {
         if !matches_target.contains(key) {
             continue;
@@ -572,7 +572,7 @@ pub fn correlate(
         }
     }
 
-    // Profile finding confidence mirrors the target ↔ profile relationship.
+    // Profile finding confidence mirrors the target-to-profile relationship.
     let mut finding_confidence = Vec::new();
     for (finding, _, key) in &profiles {
         let node = profile_nodes[key];

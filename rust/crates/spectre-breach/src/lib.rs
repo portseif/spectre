@@ -1,11 +1,11 @@
 //! Breach intelligence.
 //!
-//! * [`HibpClient`] — Have I Been Pwned API v3: authorized account lookups
+//! * [`HibpClient`]: Have I Been Pwned API v3: authorized account lookups
 //!   (paid key) and the public breach catalog (no key).
-//! * [`AuthorizedAccount`] — the only way to request account-specific breach
+//! * [`AuthorizedAccount`]: the only way to request account-specific breach
 //!   data. It can be constructed solely from an ownership-verified
 //!   [`EmailRecord`], so unverified addresses cannot reach the API.
-//! * [`assess_risk`] — risk indicators and remediation from breach metadata.
+//! * [`assess_risk`]: risk indicators and remediation from breach metadata.
 //!
 //! This crate never retrieves, stores, or displays leaked credentials. A
 //! password-exposure indicator means a breach contained password data in some

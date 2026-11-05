@@ -169,7 +169,7 @@ impl DohResolver {
     }
 }
 
-/// Join the quoted character-strings of a TXT record (`"a" "b"` → `ab`).
+/// Join the quoted character-strings of a TXT record (`"a" "b"` becomes `ab`).
 pub fn unquote_txt(data: &str) -> String {
     if !data.contains('"') {
         return data.to_string();

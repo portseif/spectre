@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-/// Deterministic Fruchterman–Reingold layout. Pure value computation so it can
+/// Deterministic Fruchterman-Reingold layout. Pure value computation so it can
 /// run off the main actor; identical input produces identical positions.
 struct GraphLayout: Sendable {
     struct Edge: Sendable {

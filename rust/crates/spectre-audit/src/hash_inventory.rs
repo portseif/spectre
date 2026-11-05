@@ -140,8 +140,8 @@ fn argon2_parameters(hash: &str) -> (Option<u64>, Option<u64>) {
 }
 
 /// Classify a single hash string. Thresholds follow the OWASP Password
-/// Storage Cheat Sheet (Argon2id m≥19 MiB t≥2; bcrypt cost≥10; PBKDF2-SHA256
-/// ≥600k, -SHA512 ≥210k, -SHA1 ≥1.3M iterations).
+/// Storage Cheat Sheet (Argon2id m >= 19 MiB and t >= 2; bcrypt cost >= 10;
+/// PBKDF2 at least 600k iterations for SHA-256, 210k for SHA-512, 1.3M for SHA-1).
 fn classify(hash: &str) -> Classification {
     use HashScheme::*;
     use HashStrength::*;

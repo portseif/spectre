@@ -106,7 +106,7 @@ impl OsintProvider for DomainDnsProvider {
 }
 
 // ---------------------------------------------------------------------------
-// RDAP — RFC 9082/9083, bootstrap per RFC 9224
+// RDAP (RFC 9082/9083), bootstrap per RFC 9224
 // ---------------------------------------------------------------------------
 
 pub struct RdapProvider {

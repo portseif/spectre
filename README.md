@@ -1,58 +1,45 @@
 # Spectre
 
-A native macOS OSINT investigation platform for **authorized** investigations. It combines a SwiftUI app with a reusable Rust engine:
+Spectre is a macOS app for OSINT investigations you are authorized to run. The interface is SwiftUI. Underneath is a Rust engine that also works on its own, from the command line or embedded in another app.
 
-- public profile discovery
-- email, phone, and domain intelligence
-- evidence-based identity correlation
-- ownership-gated breach exposure checks
-- k-anonymity password checks
-- password-hash storage audits
-- PDF, JSON, and CSV reports
+You give it a username, email address, phone number or domain. It queries public sources, links what it finds into an identity graph with the evidence behind each link, and can check breach exposure for addresses whose ownership you have verified. Reports export as PDF, JSON or CSV.
 
-> Spectre is for self-assessment, consented assessments, and scoped engagements. Every investigation requires a recorded authorization basis. Breach data is only requested for ownership-verified addresses. Spectre never enumerates private accounts, bypasses protections, or recovers credentials. See [docs/security.md](docs/security.md).
+Spectre won't enumerate private accounts, get around CAPTCHAs or rate limits, or recover anyone's passwords. Every investigation needs a written authorization basis before it starts. The details are in [docs/security.md](docs/security.md).
 
-## What it does
+## What it looks up
 
-| Input | Discovery |
+| Input | Sources |
 |---|---|
-| **Username** | GitHub, GitLab, Codeberg, Keybase (signed proofs), Mastodon (rel="me" verified links), Bluesky, Hacker News, DEV, Hugging Face, Docker Hub, Chess.com, Lichess, Wikipedia — all through documented public APIs |
-| **Email** | Syntax validation, MX / implicit MX / null MX, SPF, DMARC, and public Gravatar profiles. Breach exposure via Have I Been Pwned after ownership verification |
-| **Phone** | E.164 normalization, country code, region, and line type from offline numbering-plan metadata. No reverse lookups or location inference |
-| **Domain** | DNS records and mail-security posture, RDAP registration, the site's `rel="me"` links and `security.txt`, and public breach history of the service |
+| Username | GitHub, GitLab, Codeberg, Keybase (signed proofs), Mastodon (rel="me" verified links), Bluesky, Hacker News, DEV, Hugging Face, Docker Hub, Chess.com, Lichess and Wikipedia, all through their documented public APIs |
+| Email | Mail-domain checks (MX, implicit MX, null MX, SPF, DMARC) and public Gravatar profiles. Have I Been Pwned breach data once ownership is verified |
+| Phone | E.164 normalization, country code, region and line type from offline numbering-plan data. There are no reverse lookups and no location guessing |
+| Domain | DNS records and mail security, RDAP registration, the site's rel="me" links and security.txt, and public breach history for the service |
 
-Other features:
+Results appear as each provider answers, and you can cancel a run at any point.
 
-- **Streaming results.** Findings appear as each provider responds. Investigations can be cancelled at any time.
-- **Identity correlation.** Explainable evidence weights, categorized as Confirmed, Strong Evidence, Possible, Weak Evidence, or Unrelated. A matching username alone is always Weak Evidence. Investigators confirm or reject associations, and those decisions persist.
-- **Identity graph.** A native, zoomable graph with filters, collapsing, and an evidence inspector.
-- **Security audits.** A Pwned Passwords k-anonymity check (only a 5-character hash prefix leaves the Mac), plus an OWASP-based hash storage inventory for administrators.
-- **Reports.** PDF (Core Text and PDFKit) that separates confirmed findings from inferred associations, plus JSON bundles (importable) and CSV.
-- **Local and private.** SQLite in the app sandbox (secure delete, 0600 permissions, retention, backup and restore). API keys live in the Keychain only.
+Correlation puts every relationship in a category (Confirmed, Strong Evidence, Possible, Weak Evidence or Unrelated) and lists the evidence for it. A username match on its own always lands at Weak Evidence. You can confirm or reject any relationship, and the decision survives when correlation reruns. The identity graph is a native view you can zoom, filter and collapse.
 
-## Quick start
+The audit tools check a password against Pwned Passwords (only the first 5 characters of its SHA-1 hash leave the Mac) and inventory how a system stores password hashes against OWASP guidance. PDF reports keep confirmed findings separate from inferred ones.
+
+Everything stays on the Mac. Investigations live in SQLite inside the app sandbox, with secure delete, 0600 permissions, retention and backups. API keys go in the Keychain and nowhere else.
+
+## Getting started
 
 ```bash
-brew install xcodegen          # only needed if you change macos/project.yml
 scripts/build.sh
 open build/DerivedData/Build/Products/Debug/Spectre.app
 ```
 
-Or open `macos/Spectre.xcodeproj` in Xcode and run the **Spectre** scheme; the Rust engine builds automatically.
+You can also open `macos/Spectre.xcodeproj` in Xcode and run the Spectre scheme. The Rust engine builds as part of it. Install XcodeGen (`brew install xcodegen`) only if you plan to edit `macos/project.yml`.
 
-The CLI shares the same engine:
+The CLI runs the same engine:
 
 ```bash
 cd rust
 cargo run -p spectre-cli -- --db :memory: investigate username octocat --purpose "Self-assessment of my own accounts"
 ```
 
-Optional credentials, set in Settings → Providers (stored in the Keychain):
-
-- a **Have I Been Pwned API key**, required for account breach lookups
-- a **GitHub token**, which raises the rate limit
-
-Everything else works without paid APIs.
+Two credentials are optional and live in Settings > Providers. A Have I Been Pwned API key is needed for account breach lookups, and a GitHub token raises GitHub's rate limit. Nothing else needs a paid API.
 
 ## Tests
 
@@ -60,20 +47,20 @@ Everything else works without paid APIs.
 scripts/test.sh
 ```
 
-This runs `cargo fmt --check`, `clippy -D warnings`, 88 Rust tests, an offline CLI end-to-end test, and 17 Swift tests (including tests against the real engine over FFI). None call live external APIs.
+The script runs `cargo fmt --check`, clippy with warnings as errors, 88 Rust tests, an offline CLI end-to-end test and 17 Swift tests. Some of the Swift tests call the real engine over the FFI. No test touches a live external API.
 
-## Repository
+## Layout
 
 ```
-rust/        Cargo workspace: core · providers · correlation · breach · audit · storage · discovery (engine) · ffi · cli
-macos/       SwiftUI app (XcodeGen project.yml + generated Spectre.xcodeproj) and Swift tests
-docs/        architecture · providers · security · development
-tests/       shared fixtures and CLI integration test
-scripts/     build · test · package · Xcode Rust build phase
+rust/      Cargo workspace: core, providers, correlation, breach, audit, storage, discovery (engine), ffi, cli
+macos/     SwiftUI app (XcodeGen project.yml plus the generated Spectre.xcodeproj) and Swift tests
+docs/      architecture, providers, security, development
+tests/     shared fixtures and the CLI integration test
+scripts/   build, test, package, and the Xcode build phase for Rust
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the design, including the FFI decision, concurrency model, correlation weights, storage schema, and measured performance.
+[docs/architecture.md](docs/architecture.md) covers the design: why the FFI is plain C, how concurrency works, the correlation weights, the storage schema and measured performance.
 
 ## License
 
-MIT. Breach data © Have I Been Pwned, used under CC BY 4.0.
+MIT. Breach data comes from Have I Been Pwned under CC BY 4.0.

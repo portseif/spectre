@@ -67,7 +67,7 @@ impl OsintProvider for EmailDnsProvider {
         } else if !mx_records.is_empty() {
             true
         } else if domain_resolves {
-            // RFC 5321 §5.1 implicit MX: fall back to the domain's address record.
+            // RFC 5321 section 5.1 implicit MX: fall back to the domain's address record.
             !self.resolver.query(context, &domain, RecordType::A).await?.records.is_empty()
         } else {
             false
@@ -113,7 +113,7 @@ impl OsintProvider for EmailDnsProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Gravatar — https://docs.gravatar.com/api/profiles/rest-api/
+// Gravatar: https://docs.gravatar.com/api/profiles/rest-api/
 // ---------------------------------------------------------------------------
 
 pub struct GravatarProvider {

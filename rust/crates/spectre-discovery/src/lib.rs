@@ -656,7 +656,7 @@ impl Engine {
         vec![
             ServiceStatus {
                 id: "hibp".into(),
-                name: "Have I Been Pwned — account breaches".into(),
+                name: "Have I Been Pwned account breaches".into(),
                 description: "Breaches for ownership-verified email addresses. Requires a paid HIBP API key.".into(),
                 credential_id: Some(spectre_core::credentials::ids::HIBP_API_KEY.into()),
                 credential_required: true,

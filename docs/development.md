@@ -26,7 +26,7 @@ rustup target add x86_64-apple-darwin             # only for universal packages
 ```
 rust/                 Cargo workspace (engine, FFI, CLI)
   crates/spectre-ffi/include/   C header + module map consumed by Swift
-macos/project.yml     XcodeGen spec → macos/Spectre.xcodeproj (committed)
+macos/project.yml     XcodeGen spec that generates macos/Spectre.xcodeproj (committed)
 macos/Spectre/        App sources (App, Features/*, Components, Models, Services, DesignSystem, Resources)
 macos/SpectreTests/   Swift Testing suites
 tests/fixtures/       Shared fixtures (HIBP responses captured from the documented test account)
@@ -42,7 +42,7 @@ scripts/build.sh release
 open build/DerivedData/Build/Products/Debug/Spectre.app
 ```
 
-In Xcode, open `macos/Spectre.xcodeproj` and run the **Spectre** scheme. The *Build Rust engine* phase (`scripts/build-rust-xcode.sh`) compiles `spectre-ffi` as a static library for the active architectures into `rust/target/xcode/<Configuration>/`. Swift imports it as the `SpectreFFI` module.
+In Xcode, open `macos/Spectre.xcodeproj` and run the Spectre scheme. The *Build Rust engine* phase (`scripts/build-rust-xcode.sh`) compiles `spectre-ffi` as a static library for the active architectures into `rust/target/xcode/<Configuration>/`. Swift imports it as the `SpectreFFI` module.
 
 After changing `project.yml`, regenerate the project with `cd macos && xcodegen generate`.
 
@@ -74,7 +74,7 @@ SKIP_SWIFT=1 scripts/test.sh     # Rust + CLI only
 | Rust unit/integration | `cargo test --workspace` | Validation, HTTP policy/retry/cache/cancel, providers (mock servers), correlation, breach and risk, audit, storage and migrations, engine streaming/concurrency/cancellation/authorization, FFI |
 | Lint | `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings` | |
 | CLI | `tests/integration/cli_offline.sh` | Offline investigation, exports, authorization gates, hash inventory, deletion |
-| Swift | `xcodebuild … test` | Real Rust engine via FFI (offline), view-model state transitions with scripted engines, decoding, PDF report, graph layout and filters |
+| Swift | `xcodebuild ... test` | Real Rust engine via FFI (offline), view-model state transitions with scripted engines, decoding, PDF report, graph layout and filters |
 
 No test calls live external APIs. For manual live checks, use HIBP's test key with `multiple-breaches@hibp-integration-tests.com` (attest ownership first).
 
@@ -88,8 +88,8 @@ SPECTRE_UNIVERSAL=1 scripts/package.sh               # Developer ID, notarized, 
 ```
 
 - The app is sandboxed with `network.client` and `files.user-selected.read-write` entitlements and the hardened runtime enabled.
-- Create a notary profile once with `xcrun notarytool store-credentials spectre --apple-id … --team-id …`.
-- Debug builds are ad-hoc signed ("Sign to Run Locally"). Keychain items written by an ad-hoc build can prompt again after a rebuild because the code signature changes.
+- Create a notary profile once with `xcrun notarytool store-credentials spectre --apple-id <id> --team-id <team>`.
+- Debug builds are ad-hoc signed (Sign to Run Locally). Keychain items written by an ad-hoc build can prompt again after a rebuild because the code signature changes.
 
 ## Conventions
 

@@ -165,7 +165,7 @@ private struct InventoryResult: View {
                 TableColumn("Salted") { scheme in Text(scheme.salted.map { $0 ? "Yes" : "No" } ?? "?") }.width(60)
                 TableColumn("Strength") { scheme in TagChip(text: scheme.strength.label, tint: Theme.color(for: scheme.strength)) }.width(110)
                 TableColumn("Parameters") { scheme in
-                    Text(scheme.parameters.sorted { $0.key < $1.key }.map { "\($0.key) ×\($0.value)" }.joined(separator: ", "))
+                    Text(scheme.parameters.sorted { $0.key < $1.key }.map { "\($0.key) (\($0.value))" }.joined(separator: ", "))
                         .foregroundStyle(.spectreSecondary)
                 }
             }

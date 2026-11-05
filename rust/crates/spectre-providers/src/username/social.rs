@@ -18,7 +18,7 @@ use crate::common::{
 use crate::provider_metadata;
 
 // ---------------------------------------------------------------------------
-// Keybase — https://keybase.io/docs/api/1.0/call/user/lookup
+// Keybase: https://keybase.io/docs/api/1.0/call/user/lookup
 // ---------------------------------------------------------------------------
 
 static KEYBASE_USERNAME: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_]{2,16}$").expect("valid regex"));
@@ -158,7 +158,7 @@ impl OsintProvider for KeybaseProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Mastodon (mastodon.social) — https://docs.joinmastodon.org/methods/accounts/#lookup
+// Mastodon (mastodon.social): https://docs.joinmastodon.org/methods/accounts/#lookup
 // ---------------------------------------------------------------------------
 
 pub struct MastodonProvider {
@@ -268,7 +268,7 @@ impl OsintProvider for MastodonProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Bluesky — https://docs.bsky.app/docs/api/app-bsky-actor-get-profile
+// Bluesky: https://docs.bsky.app/docs/api/app-bsky-actor-get-profile
 // ---------------------------------------------------------------------------
 
 static BLUESKY_HANDLE: LazyLock<Regex> =
@@ -289,7 +289,7 @@ impl BlueskyProvider {
         Self { base }
     }
 
-    /// `alice` → `alice.bsky.social`; dotted names are treated as full handles.
+    /// `alice` becomes `alice.bsky.social`; dotted names are treated as full handles.
     pub fn handle_for(username: &str) -> Option<String> {
         let lowered = username.to_ascii_lowercase();
         let handle = if lowered.contains('.') { lowered } else { format!("{lowered}.bsky.social") };
@@ -374,7 +374,7 @@ impl OsintProvider for BlueskyProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Hacker News — https://github.com/HackerNews/API
+// Hacker News: https://github.com/HackerNews/API
 // ---------------------------------------------------------------------------
 
 pub struct HackerNewsProvider {
@@ -437,7 +437,7 @@ impl OsintProvider for HackerNewsProvider {
 }
 
 // ---------------------------------------------------------------------------
-// DEV Community — https://developers.forem.com/api/v1#tag/users
+// DEV Community: https://developers.forem.com/api/v1#tag/users
 // ---------------------------------------------------------------------------
 
 pub struct DevToProvider {

@@ -12,7 +12,7 @@ use crate::common::{attributes, base_url, endpoint, host_of, link, non_empty, no
 use crate::provider_metadata;
 
 // ---------------------------------------------------------------------------
-// Hugging Face — https://huggingface.co/docs/hub/api
+// Hugging Face: https://huggingface.co/docs/hub/api
 // ---------------------------------------------------------------------------
 
 pub struct HuggingFaceProvider {
@@ -91,7 +91,7 @@ impl OsintProvider for HuggingFaceProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Docker Hub — https://docs.docker.com/reference/api/hub/latest/
+// Docker Hub: https://docs.docker.com/reference/api/hub/latest/
 // ---------------------------------------------------------------------------
 
 pub struct DockerHubProvider {
@@ -164,7 +164,7 @@ impl OsintProvider for DockerHubProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Chess.com — https://www.chess.com/news/view/published-data-api
+// Chess.com: https://www.chess.com/news/view/published-data-api
 // ---------------------------------------------------------------------------
 
 pub struct ChessComProvider {
@@ -246,7 +246,7 @@ impl OsintProvider for ChessComProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Lichess — https://lichess.org/api#tag/Users/operation/apiUser
+// Lichess: https://lichess.org/api#tag/Users/operation/apiUser
 // ---------------------------------------------------------------------------
 
 pub struct LichessProvider {
@@ -338,7 +338,7 @@ impl OsintProvider for LichessProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Wikipedia (English) — https://www.mediawiki.org/wiki/API:Users
+// Wikipedia (English): https://www.mediawiki.org/wiki/API:Users
 // ---------------------------------------------------------------------------
 
 pub struct WikipediaProvider {

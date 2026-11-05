@@ -30,7 +30,7 @@ private struct InvestigationTable: View {
                 ContentUnavailableView {
                     Label("No investigations", systemImage: "magnifyingglass")
                 } description: {
-                    Text(model.searchText.isEmpty ? "Start a new investigation to discover public information." : "No investigations match “\(model.searchText)”.")
+                    Text(model.searchText.isEmpty ? "Start a new investigation to discover public information." : "No investigations match \"\(model.searchText)\".")
                 } actions: {
                     Button("New Investigation") { model.selection = .newInvestigation }
                 }
