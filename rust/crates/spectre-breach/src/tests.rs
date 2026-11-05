@@ -35,6 +35,7 @@ fn context() -> ProviderContext {
         credentials: Arc::new(CredentialStore::new()),
         cancellation: CancellationToken::new(),
         stats: Arc::new(RequestStats::default()),
+        sink: None,
     }
 }
 

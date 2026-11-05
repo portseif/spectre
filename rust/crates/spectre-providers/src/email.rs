@@ -9,7 +9,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use spectre_core::error::SpectreResult;
 use spectre_core::model::{
-    Confidence, ConfidenceCategory, DiscoveryMethod, EmailIntelligenceFinding, FindingData, LinkedAccount, ProfileFinding,
+    Confidence, ConfidenceCategory, DiscoveryMethod, EmailIntelligenceFinding, FindingData, LinkedAccount, PgpKeyFinding, ProfileFinding,
     VerificationStatus,
 };
 use spectre_core::provider::{FindingDraft, OsintProvider, ProviderCapability, ProviderContext};
@@ -234,6 +234,145 @@ impl OsintProvider for GravatarProvider {
     }
 }
 
+// ---------------------------------------------------------------------------
+// OpenPGP keyserver (keys.openpgp.org): https://keys.openpgp.org/about/api
+// ---------------------------------------------------------------------------
+
+/// keys.openpgp.org only publishes a user ID after the address owner confirms
+/// it by email, so a hit means the key holder proved control of the address.
+pub struct OpenPgpProvider {
+    base: Url,
+}
+
+impl Default for OpenPgpProvider {
+    fn default() -> Self {
+        Self { base: base_url("https://keys.openpgp.org/") }
+    }
+}
+
+impl OpenPgpProvider {
+    pub fn with_base(base: Url) -> Self {
+        Self { base }
+    }
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    (byte as char).to_digit(16).map(|digit| digit as u8)
+}
+
+fn percent_decode(raw: &str) -> String {
+    let bytes = raw.as_bytes();
+    let mut output = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%'
+            && let Some(&[high, low]) = bytes.get(index + 1..index + 3)
+            && let (Some(high), Some(low)) = (hex_value(high), hex_value(low))
+        {
+            output.push(high << 4 | low);
+            index += 3;
+            continue;
+        }
+        output.push(bytes[index]);
+        index += 1;
+    }
+    String::from_utf8_lossy(&output).into_owned()
+}
+
+fn pgp_algorithm(code: &str) -> String {
+    match code {
+        "1" | "2" | "3" => "RSA",
+        "16" => "Elgamal",
+        "17" => "DSA",
+        "18" => "ECDH",
+        "19" => "ECDSA",
+        "22" => "EdDSA",
+        "25" => "X25519",
+        "27" => "Ed25519",
+        "28" => "Ed448",
+        other => return format!("algorithm {other}"),
+    }
+    .to_string()
+}
+
+fn epoch(raw: &str) -> Option<String> {
+    raw.parse::<i64>().ok().and_then(crate::common::unix_to_rfc3339)
+}
+
+/// Parse a machine-readable HKP index (`op=index&options=mr`). Returns the
+/// first key and its user IDs.
+pub fn parse_hkp_index(email: &str, body: &str, keyserver: &str) -> Option<PgpKeyFinding> {
+    let mut key: Option<PgpKeyFinding> = None;
+    for line in body.lines() {
+        let fields: Vec<&str> = line.trim().split(':').collect();
+        match fields.first().copied() {
+            Some("pub") if key.is_none() => {
+                key = Some(PgpKeyFinding {
+                    email: email.to_string(),
+                    fingerprint: fields.get(1)?.to_ascii_uppercase(),
+                    algorithm: fields.get(2).map(|code| pgp_algorithm(code)).unwrap_or_default(),
+                    bits: fields.get(3).and_then(|bits| bits.parse().ok()),
+                    created_at: fields.get(4).and_then(|value| epoch(value)),
+                    expires_at: fields.get(5).and_then(|value| epoch(value)),
+                    user_ids: Vec::new(),
+                    keyserver: keyserver.to_string(),
+                });
+            }
+            Some("pub") => break,
+            Some("uid") => {
+                if let (Some(current), Some(uid)) = (key.as_mut(), fields.get(1)) {
+                    current.user_ids.push(percent_decode(uid));
+                }
+            }
+            _ => {}
+        }
+    }
+    key
+}
+
+#[async_trait]
+impl OsintProvider for OpenPgpProvider {
+    provider_metadata! {
+        id: "openpgp",
+        name: "OpenPGP Keyserver",
+        description: "Public OpenPGP keys on keys.openpgp.org, which only lists addresses their owners have confirmed.",
+        homepage: "https://keys.openpgp.org",
+        targets: [TargetType::Email],
+        capabilities: [ProviderCapability::PublicEmailAssociation],
+    }
+
+    fn allowed_hosts(&self) -> Vec<String> {
+        vec![host_of(&self.base)]
+    }
+
+    async fn discover(&self, context: &ProviderContext, target: &InvestigationTarget) -> SpectreResult<Vec<FindingDraft>> {
+        let InvestigationTarget::Email(email) = target else { return Ok(Vec::new()) };
+        let mut url = endpoint(&self.base, &["pks", "lookup"]);
+        url.query_pairs_mut().append_pair("op", "index").append_pair("options", "mr").append_pair("search", email);
+        let response = context.get(context.request(url.clone()).accept("text/plain")).await?;
+        if response.status == 404 {
+            return Ok(Vec::new());
+        }
+        let body = response.ensure_success()?.text();
+        let Some(key) = parse_hkp_index(email, &body, &host_of(&self.base)) else { return Ok(Vec::new()) };
+        let short = key.fingerprint.chars().rev().take(16).collect::<Vec<_>>().into_iter().rev().collect::<String>();
+        Ok(vec![FindingDraft {
+            title: format!("OpenPGP key {short}"),
+            summary: Some(format!("{} user ID(s), {}", key.user_ids.len(), key.algorithm)),
+            confidence: observed_fact("Listed on keys.openpgp.org, which publishes an address only after its owner confirms it"),
+            verification_status: VerificationStatus::PubliclyObserved,
+            sources: vec![context.source(
+                Some(format!(
+                    "https://keys.openpgp.org/search?q={}",
+                    url::form_urlencoded::byte_serialize(email.as_bytes()).collect::<String>()
+                )),
+                DiscoveryMethod::PublicApi,
+            )],
+            data: FindingData::PgpKey(key),
+        }])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -245,5 +384,25 @@ mod tests {
             GravatarProvider::profile_hash("  Test@Example.com "),
             "973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b"
         );
+    }
+
+    #[test]
+    fn hkp_index_parsing() {
+        let body = "info:1:1\npub:864C145731DD963466CC7571A2604867523C7ED8:1:3072:1559826154::\nuid:keyserver@keys.openpgp.org:1623227867::\nuid:Alice%20Example%20%3Calice@example.org%3E:1623227866::\npub:AAAA:22:256:1::\n";
+        let key = parse_hkp_index("keyserver@keys.openpgp.org", body, "keys.openpgp.org").unwrap();
+        assert_eq!(key.fingerprint, "864C145731DD963466CC7571A2604867523C7ED8");
+        assert_eq!(key.algorithm, "RSA");
+        assert_eq!(key.bits, Some(3072));
+        assert_eq!(key.user_ids, vec!["keyserver@keys.openpgp.org", "Alice Example <alice@example.org>"]);
+        assert!(key.created_at.unwrap().starts_with("2019-06-06"));
+        assert!(parse_hkp_index("x@example.org", "info:1:0\n", "keys.openpgp.org").is_none());
+    }
+
+    #[test]
+    fn percent_decoding_tolerates_bad_escapes() {
+        assert_eq!(percent_decode("caf%C3%A9"), "caf\u{e9}");
+        assert_eq!(percent_decode("%a\u{e9}"), "%a\u{e9}");
+        assert_eq!(percent_decode("100%"), "100%");
+        assert_eq!(percent_decode("%+1x"), "%+1x");
     }
 }

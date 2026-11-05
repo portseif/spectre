@@ -328,6 +328,13 @@ struct SecurityTxt: Codable, Hashable, Sendable {
     let encryption: String?
 }
 
+struct HeaderCheck: Codable, Hashable, Sendable {
+    let header: String
+    let present: Bool
+    let value: String?
+    let note: String?
+}
+
 struct WebPresenceFinding: Codable, Hashable, Sendable {
     let url: String
     let statusCode: UInt16
@@ -336,6 +343,38 @@ struct WebPresenceFinding: Codable, Hashable, Sendable {
     let relMeLinks: [String]
     let profileLinks: [String]
     let securityTxt: SecurityTxt?
+    // Optional so findings stored before these fields existed still decode.
+    let serverBanner: String?
+    let headerChecks: [HeaderCheck]?
+}
+
+struct CertificateFinding: Codable, Hashable, Sendable {
+    let domain: String
+    let hostnames: [String]
+    let issuers: [String]
+    let certificates: UInt32
+    let currentlyValid: UInt32
+    let earliestNotBefore: String?
+    let latestNotAfter: String?
+    let source: String
+}
+
+struct PgpKeyFinding: Codable, Hashable, Sendable {
+    let email: String
+    let fingerprint: String
+    let algorithm: String
+    let bits: UInt32?
+    let createdAt: String?
+    let expiresAt: String?
+    let userIds: [String]
+    let keyserver: String
+}
+
+struct WebArchiveFinding: Codable, Hashable, Sendable {
+    let url: String
+    let firstCapture: String
+    let lastCapture: String
+    let archiveUrl: String
 }
 
 struct BreachIncident: Codable, Hashable, Identifiable, Sendable {
@@ -378,6 +417,9 @@ enum FindingKind: String, Codable, CaseIterable, Sendable {
     case domainRegistration = "domain_registration"
     case webPresence = "web_presence"
     case breachIncident = "breach_incident"
+    case certificates
+    case pgpKey = "pgp_key"
+    case webArchive = "web_archive"
 
     var label: String {
         switch self {
@@ -389,6 +431,9 @@ enum FindingKind: String, Codable, CaseIterable, Sendable {
         case .domainRegistration: "Registration"
         case .webPresence: "Website"
         case .breachIncident: "Breach Exposure"
+        case .certificates: "Certificates"
+        case .pgpKey: "OpenPGP Keys"
+        case .webArchive: "Archive History"
         }
     }
 
@@ -402,6 +447,9 @@ enum FindingKind: String, Codable, CaseIterable, Sendable {
         case .domainRegistration: "building.columns"
         case .webPresence: "safari"
         case .breachIncident: "exclamationmark.shield"
+        case .certificates: "checkmark.seal.text.page"
+        case .pgpKey: "key.horizontal"
+        case .webArchive: "clock.arrow.circlepath"
         }
     }
 }
@@ -416,6 +464,9 @@ enum FindingData: Codable, Hashable, Sendable {
     case domainRegistration(DomainRegistrationFinding)
     case webPresence(WebPresenceFinding)
     case breachIncident(BreachFinding)
+    case certificates(CertificateFinding)
+    case pgpKey(PgpKeyFinding)
+    case webArchive(WebArchiveFinding)
 
     private enum CodingKeys: String, CodingKey { case kind, detail }
 
@@ -430,6 +481,9 @@ enum FindingData: Codable, Hashable, Sendable {
         case .domainRegistration: self = .domainRegistration(try container.decode(DomainRegistrationFinding.self, forKey: .detail))
         case .webPresence: self = .webPresence(try container.decode(WebPresenceFinding.self, forKey: .detail))
         case .breachIncident: self = .breachIncident(try container.decode(BreachFinding.self, forKey: .detail))
+        case .certificates: self = .certificates(try container.decode(CertificateFinding.self, forKey: .detail))
+        case .pgpKey: self = .pgpKey(try container.decode(PgpKeyFinding.self, forKey: .detail))
+        case .webArchive: self = .webArchive(try container.decode(WebArchiveFinding.self, forKey: .detail))
         }
     }
 
@@ -445,6 +499,9 @@ enum FindingData: Codable, Hashable, Sendable {
         case .domainRegistration(let detail): try container.encode(detail, forKey: .detail)
         case .webPresence(let detail): try container.encode(detail, forKey: .detail)
         case .breachIncident(let detail): try container.encode(detail, forKey: .detail)
+        case .certificates(let detail): try container.encode(detail, forKey: .detail)
+        case .pgpKey(let detail): try container.encode(detail, forKey: .detail)
+        case .webArchive(let detail): try container.encode(detail, forKey: .detail)
         }
     }
 
@@ -458,6 +515,9 @@ enum FindingData: Codable, Hashable, Sendable {
         case .domainRegistration: .domainRegistration
         case .webPresence: .webPresence
         case .breachIncident: .breachIncident
+        case .certificates: .certificates
+        case .pgpKey: .pgpKey
+        case .webArchive: .webArchive
         }
     }
 }
@@ -890,6 +950,18 @@ struct Diagnostics: Codable, Hashable, Sendable {
     let allowedHosts: [String]
     let credentialsConfigured: [String]
     let uptimeSeconds: UInt64
+}
+
+/// An identifier the findings point to. Starting it is always the
+/// investigator's call, with its own authorization record.
+struct FollowUp: Codable, Hashable, Identifiable, Sendable {
+    let targetType: TargetType
+    let value: String
+    let reason: String
+    let sourceFindingId: UUID?
+    let alreadyInvestigated: Bool
+
+    var id: String { "\(targetType.rawValue):\(value)" }
 }
 
 struct TargetValidation: Codable, Hashable, Sendable {

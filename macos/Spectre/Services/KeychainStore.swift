@@ -66,6 +66,7 @@ struct KeychainError: LocalizedError, Sendable {
 enum CredentialID: String, CaseIterable, Identifiable, Sendable {
     case hibp
     case github
+    case certspotter
 
     var id: String { rawValue }
 
@@ -73,6 +74,7 @@ enum CredentialID: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .hibp: "Have I Been Pwned API key"
         case .github: "GitHub token (optional)"
+        case .certspotter: "Cert Spotter API key (optional)"
         }
     }
 
@@ -80,6 +82,7 @@ enum CredentialID: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .hibp: "Required for account breach lookups of ownership-verified addresses. Get a key at haveibeenpwned.com/API/Key."
         case .github: "Raises GitHub's 60 requests/hour unauthenticated limit. A fine-grained token with no permissions is enough."
+        case .certspotter: "Certificate Transparency lookups are limited to 10 an hour without one. Keys come from sslmate.com."
         }
     }
 }

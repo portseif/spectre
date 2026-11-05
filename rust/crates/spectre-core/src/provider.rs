@@ -5,6 +5,7 @@
 //! registering the provider. The engine itself does not change.
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use chrono::Utc;
@@ -75,9 +76,27 @@ pub struct ProviderContext {
     pub credentials: Arc<CredentialStore>,
     pub cancellation: CancellationToken,
     pub stats: Arc<RequestStats>,
+    /// Streams findings to the engine before the provider returns. `None`
+    /// outside an investigation (tests, ad-hoc calls).
+    pub sink: Option<FindingSink>,
 }
 
+/// Channel providers use to publish findings as they are found.
+pub type FindingSink = tokio::sync::mpsc::UnboundedSender<(String, FindingDraft)>;
+
 impl ProviderContext {
+    /// Publish a finding immediately. Returns the draft back when there is no
+    /// sink, so the caller can include it in its return value instead.
+    pub fn publish(&self, draft: FindingDraft) -> Option<FindingDraft> {
+        match &self.sink {
+            Some(sink) => match sink.send((self.provider_id.clone(), draft)) {
+                Ok(()) => None,
+                Err(tokio::sync::mpsc::error::SendError((_, draft))) => Some(draft),
+            },
+            None => Some(draft),
+        }
+    }
+
     /// Issue a policy-checked GET request on behalf of this provider.
     pub async fn get(&self, request: HttpRequest) -> SpectreResult<HttpResponse> {
         self.http.get(request, &self.cancellation, &self.stats).await
@@ -126,6 +145,12 @@ pub trait OsintProvider: Send + Sync {
 
     fn uses_network(&self) -> bool {
         true
+    }
+
+    /// Deadline for one run, given the configured default. Providers that
+    /// fan out to many hosts can ask for more time.
+    fn deadline(&self, configured: Duration) -> Duration {
+        configured
     }
 
     /// Perform discovery. Returning `Ok(vec![])` means "nothing found"; errors

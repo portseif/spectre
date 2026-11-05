@@ -16,6 +16,8 @@ pub mod ids {
     pub const HIBP_API_KEY: &str = "hibp";
     /// Optional GitHub token for higher REST rate limits.
     pub const GITHUB_TOKEN: &str = "github";
+    /// Optional Cert Spotter API key (the free tier allows 10 queries an hour).
+    pub const CERTSPOTTER_TOKEN: &str = "certspotter";
 }
 
 #[derive(Default)]

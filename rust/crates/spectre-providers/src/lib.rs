@@ -51,11 +51,15 @@ pub fn default_providers() -> Vec<Arc<dyn OsintProvider>> {
         Arc::new(username::community::ChessComProvider::default()),
         Arc::new(username::community::LichessProvider::default()),
         Arc::new(username::community::WikipediaProvider::default()),
+        Arc::new(username::sites::SiteCheckProvider::default()),
         Arc::new(email::EmailDnsProvider::default()),
         Arc::new(email::GravatarProvider::default()),
+        Arc::new(email::OpenPgpProvider::default()),
         Arc::new(phone::PhoneNumberingProvider),
         Arc::new(domain::DomainDnsProvider::default()),
         Arc::new(domain::RdapProvider::default()),
+        Arc::new(domain::CertSpotterProvider::default()),
+        Arc::new(domain::WaybackProvider::default()),
         Arc::new(domain::WebsiteProvider),
     ]
 }

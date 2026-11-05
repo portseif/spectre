@@ -161,6 +161,10 @@ final class RustEngine: EngineClient, Sendable {
         try await call("relationship.decide", ["relationship_id": Self.id(relationship), "decision": decision.map { .string($0.rawValue) } ?? .null])
     }
 
+    func followUps(_ id: UUID) async throws -> [FollowUp] {
+        try await call("investigation.suggestions", ["id": Self.id(id)])
+    }
+
     // MARK: - Settings & providers
 
     func dashboard() async throws -> DashboardStats { try await call("dashboard.stats") }

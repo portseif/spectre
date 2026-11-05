@@ -34,6 +34,8 @@ COMMANDS:
     password-check                    Read one password from stdin; k-anonymity check
     hash-inventory <file|->           Inventory hash storage schemes (authorized admins)
     breach-catalog [--refresh] [search]
+    follow-ups <id>                   Identifiers the findings point to (start each one yourself)
+    sites [verify]                    List profile-page checks, or self-test them live
     bench <type> <value> [--runs N]   Run repeated investigations and report metrics
     call <method> [json]              Invoke a raw engine API method
 ";
@@ -299,6 +301,45 @@ async fn run(options: Options) -> Result<(), String> {
             }
             let query = positional(&rest).first().map(|value| value.to_string());
             print(&call("breach.catalog.search", json!({ "query": query, "limit": 25 })).await?);
+        }
+        "follow-ups" => {
+            let identifier = positional(&rest).first().copied().ok_or("follow-ups needs an investigation id")?.to_string();
+            let suggestions = call("investigation.suggestions", json!({ "id": identifier })).await?;
+            if options.json {
+                print(&suggestions);
+            } else {
+                for item in suggestions.as_array().into_iter().flatten() {
+                    println!(
+                        "{:<9} {:<40} {}{}",
+                        item["target_type"].as_str().unwrap_or_default(),
+                        item["value"].as_str().unwrap_or_default(),
+                        item["reason"].as_str().unwrap_or_default(),
+                        if item["already_investigated"] == true { " (already investigated)" } else { "" }
+                    );
+                }
+            }
+        }
+        "sites" => {
+            if positional(&rest).first() == Some(&"verify") {
+                let results = call("sites.verify", json!({})).await?;
+                let mut failed = 0;
+                for result in results.as_array().into_iter().flatten() {
+                    let passed = result["passed"] == true;
+                    failed += usize::from(!passed);
+                    println!(
+                        "{} {:<16} known account: {:<12} random name: {}",
+                        if passed { "ok  " } else { "FAIL" },
+                        result["name"].as_str().unwrap_or_default(),
+                        result["claimed"].as_str().unwrap_or_default(),
+                        result["missing"].as_str().unwrap_or_default()
+                    );
+                }
+                if failed > 0 {
+                    return Err(format!("{failed} site definition(s) failed the self-test"));
+                }
+            } else {
+                print(&call("sites.catalog", json!({})).await?);
+            }
         }
         "bench" => {
             let runs: usize = flag(&rest, "--runs").and_then(|value| value.parse().ok()).unwrap_or(3);

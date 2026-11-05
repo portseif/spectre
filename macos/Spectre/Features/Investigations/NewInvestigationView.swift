@@ -96,10 +96,21 @@ struct NewInvestigationView: View {
         .navigationTitle("New Investigation")
         .task {
             targetType = defaultTargetType
+            applyDraft()
             await loadProviders()
         }
+        .onChange(of: model.draftTarget) { _, _ in applyDraft() }
         .task(id: ValidationKey(type: targetType, value: value, region: region)) { await validate() }
         .onChange(of: targetType) { _, _ in resetProviderSelection() }
+    }
+
+    private func applyDraft() {
+        guard let draft = model.draftTarget else { return }
+        targetType = draft.type
+        value = draft.value
+        purpose = ""
+        attested = false
+        model.draftTarget = nil
     }
 
     private func binding(for providerID: String) -> Binding<Bool> {

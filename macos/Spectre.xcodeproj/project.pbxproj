@@ -13,6 +13,7 @@
 		33228CD5039D323894B3DC53 /* EngineCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1034095299F663B91AD7541F /* EngineCoding.swift */; };
 		38FB4C67258BFE411BADB233 /* GraphLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603BA6A4412A3DED5E39C2BE /* GraphLayout.swift */; };
 		4092D9B9BD76C804E6619073 /* EngineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE973542179A60F58E64B74 /* EngineModels.swift */; };
+		427420419FAC6188B4DD982C /* FollowUpsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DE746BC2258FF91B8960B9 /* FollowUpsTab.swift */; };
 		48E15644B756DC41C9338E08 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCA713FCDC6327C7C7B594D /* KeychainStore.swift */; };
 		4A8EFAB32AD7D400C99ECD00 /* SupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD534DD00AD56BD43E4749BB /* SupportTests.swift */; };
 		5578A377C4CD49FB58A3789E /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B054811EBC52DCC72C264D0E /* InspectorView.swift */; };
@@ -58,6 +59,7 @@
 		13DEA8C1AD56512EEDAEB6BE /* BreachIntelligenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreachIntelligenceView.swift; sourceTree = "<group>"; };
 		2B19B877573242616F349E6C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2B569D89A64CDB19752A7994 /* InvestigationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestigationViewModel.swift; sourceTree = "<group>"; };
+		33DE746BC2258FF91B8960B9 /* FollowUpsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUpsTab.swift; sourceTree = "<group>"; };
 		422BC4A317B2AC4BE1575F05 /* RustEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustEngine.swift; sourceTree = "<group>"; };
 		4895C8EF6D645B7277BD5C55 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
 		5818CE09D4C7F6DC13A6D392 /* ReportGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportGenerator.swift; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 		17D34984C54B66FA9A95B277 /* Investigations */ = {
 			isa = PBXGroup;
 			children = (
+				33DE746BC2258FF91B8960B9 /* FollowUpsTab.swift */,
 				59D22F1CF526D4B56E56B94A /* InvestigationDetailView.swift */,
 				FBE91D881EFA6621F9FD845F /* InvestigationsView.swift */,
 				2B569D89A64CDB19752A7994 /* InvestigationViewModel.swift */,
@@ -407,6 +410,7 @@
 				33228CD5039D323894B3DC53 /* EngineCoding.swift in Sources */,
 				4092D9B9BD76C804E6619073 /* EngineModels.swift in Sources */,
 				E1D35645C1732CB6739A374D /* FindingViews.swift in Sources */,
+				427420419FAC6188B4DD982C /* FollowUpsTab.swift in Sources */,
 				38FB4C67258BFE411BADB233 /* GraphLayout.swift in Sources */,
 				911813408E324867E4299F1C /* IdentitiesView.swift in Sources */,
 				F920513B08E519DA1166D817 /* IdentityGraphView.swift in Sources */,

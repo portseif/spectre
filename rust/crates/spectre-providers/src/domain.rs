@@ -8,10 +8,10 @@ use scraper::{Html, Selector};
 use serde::Deserialize;
 use spectre_core::error::{ErrorCode, SpectreError, SpectreResult};
 use spectre_core::model::{
-    DiscoveryMethod, DnsRecord, DnsRecordsFinding, DomainRegistrationFinding, FindingData, SecurityTxt, VerificationStatus,
-    WebPresenceFinding,
+    CertificateFinding, DiscoveryMethod, DnsRecord, DnsRecordsFinding, DomainRegistrationFinding, FindingData, HeaderCheck, SecurityTxt,
+    VerificationStatus, WebArchiveFinding, WebPresenceFinding,
 };
-use spectre_core::provider::{FindingDraft, OsintProvider, ProviderCapability, ProviderContext};
+use spectre_core::provider::{CredentialRequirement, FindingDraft, OsintProvider, ProviderCapability, ProviderContext};
 use spectre_core::target::{InvestigationTarget, TargetType};
 use url::Url;
 
@@ -307,6 +307,77 @@ pub fn parse_homepage(html: &str, page_url: &Url) -> HomepageMetadata {
     }
 }
 
+/// Passive review of the homepage's security headers. Nothing is probed:
+/// this only reads the response the site already sent.
+pub fn review_security_headers(headers: &[(String, String)]) -> (Option<String>, Vec<HeaderCheck>) {
+    let get = |name: &str| headers.iter().find(|(key, _)| key.eq_ignore_ascii_case(name)).map(|(_, value)| value.clone());
+    let csp = get("content-security-policy");
+    let mut checks = Vec::new();
+
+    let hsts = get("strict-transport-security");
+    let hsts_note = match &hsts {
+        None => Some("Missing. Browsers may try plain HTTP before being redirected.".to_string()),
+        Some(value) => {
+            let max_age = value
+                .split(';')
+                .find_map(|part| part.trim().strip_prefix("max-age=").and_then(|age| age.trim_matches('"').parse::<u64>().ok()));
+            match max_age {
+                Some(age) if age < 15_552_000 => Some(format!("max-age is {age}s; six months (15552000) or more is usual.")),
+                None => Some("No max-age directive.".to_string()),
+                _ => None,
+            }
+        }
+    };
+    checks.push(HeaderCheck { header: "Strict-Transport-Security".into(), present: hsts.is_some(), value: hsts, note: hsts_note });
+
+    checks.push(HeaderCheck {
+        header: "Content-Security-Policy".into(),
+        present: csp.is_some(),
+        note: csp.is_none().then(|| "Missing. A policy limits the damage from injected scripts.".to_string()),
+        value: csp.clone(),
+    });
+
+    let nosniff = get("x-content-type-options");
+    let nosniff_ok = nosniff.as_deref().is_some_and(|value| value.trim().eq_ignore_ascii_case("nosniff"));
+    checks.push(HeaderCheck {
+        header: "X-Content-Type-Options".into(),
+        present: nosniff.is_some(),
+        note: (!nosniff_ok).then(|| "Should be \"nosniff\" so browsers don't guess content types.".to_string()),
+        value: nosniff,
+    });
+
+    let frame_options = get("x-frame-options");
+    let frame_ancestors = csp.as_deref().is_some_and(|policy| policy.to_ascii_lowercase().contains("frame-ancestors"));
+    checks.push(HeaderCheck {
+        header: "X-Frame-Options / frame-ancestors".into(),
+        present: frame_options.is_some() || frame_ancestors,
+        note: (frame_options.is_none() && !frame_ancestors).then(|| "Missing. Other sites can frame this page (clickjacking).".to_string()),
+        value: frame_options.or_else(|| frame_ancestors.then(|| "set in Content-Security-Policy".to_string())),
+    });
+
+    let referrer = get("referrer-policy");
+    checks.push(HeaderCheck {
+        header: "Referrer-Policy".into(),
+        present: referrer.is_some(),
+        note: referrer.is_none().then(|| "Not set; browsers fall back to their default policy.".to_string()),
+        value: referrer,
+    });
+
+    let banner = [get("server"), get("x-powered-by")].into_iter().flatten().collect::<Vec<_>>().join(", ");
+    let banner = (!banner.is_empty()).then_some(banner);
+    if let Some(value) = &banner
+        && value.chars().any(|character| character.is_ascii_digit())
+    {
+        checks.push(HeaderCheck {
+            header: "Server banner".into(),
+            present: true,
+            value: Some(value.clone()),
+            note: Some("Discloses software versions, which helps attackers match known vulnerabilities.".into()),
+        });
+    }
+    (banner, checks)
+}
+
 /// Parse an RFC 9116 security.txt file.
 pub fn parse_security_txt(url: &str, body: &str) -> Option<SecurityTxt> {
     let mut parsed = SecurityTxt { url: url.to_string(), contacts: Vec::new(), policy: None, expires: None, encryption: None };
@@ -359,6 +430,7 @@ impl OsintProvider for WebsiteProvider {
             return Err(SpectreError::new(ErrorCode::UpstreamError, format!("{domain} homepage returned HTTP {}", response.status)));
         }
         let metadata = parse_homepage(&response.text(), &response.final_url);
+        let (server_banner, header_checks) = review_security_headers(&response.headers);
 
         let security_url = Url::parse(&format!("https://{domain}/.well-known/security.txt")).expect("valid URL");
         let security_txt =
@@ -391,7 +463,236 @@ impl OsintProvider for WebsiteProvider {
                 rel_me_links: metadata.rel_me_links.into_iter().filter_map(|href| normalize_link(&href)).collect(),
                 profile_links: metadata.profile_links,
                 security_txt,
+                server_banner,
+                header_checks,
             }),
+        }])
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Certificate Transparency (Cert Spotter): https://sslmate.com/help/reference/ct_search_api_v1
+// ---------------------------------------------------------------------------
+
+pub struct CertSpotterProvider {
+    base: Url,
+}
+
+impl Default for CertSpotterProvider {
+    fn default() -> Self {
+        Self { base: base_url("https://api.certspotter.com/") }
+    }
+}
+
+impl CertSpotterProvider {
+    pub fn with_base(base: Url) -> Self {
+        Self { base }
+    }
+}
+
+#[derive(Deserialize)]
+struct Issuance {
+    #[serde(default)]
+    dns_names: Vec<String>,
+    issuer: Option<CertIssuer>,
+    not_before: Option<String>,
+    not_after: Option<String>,
+    #[serde(default)]
+    revoked: bool,
+}
+
+#[derive(Deserialize)]
+struct CertIssuer {
+    friendly_name: Option<String>,
+    name: Option<String>,
+}
+
+const MAX_HOSTNAMES: usize = 500;
+
+/// Summarize CT issuances for `domain`: hostnames under it, issuers, validity.
+fn summarize_issuances(domain: &str, issuances: Vec<Issuance>, now: chrono::DateTime<chrono::Utc>) -> CertificateFinding {
+    let suffix = format!(".{domain}");
+    let mut hostnames = BTreeSet::new();
+    let mut issuers = BTreeSet::new();
+    let mut currently_valid = 0;
+    let mut earliest: Option<String> = None;
+    let mut latest: Option<String> = None;
+    let certificates = issuances.len() as u32;
+    for issuance in issuances {
+        for name in &issuance.dns_names {
+            let host = name.trim().trim_start_matches("*.").trim_end_matches('.').to_ascii_lowercase();
+            if (host == domain || host.ends_with(&suffix)) && hostnames.len() < MAX_HOSTNAMES {
+                hostnames.insert(host);
+            }
+        }
+        if let Some(issuer) = issuance.issuer.and_then(|issuer| issuer.friendly_name.or(issuer.name)) {
+            issuers.insert(issuer);
+        }
+        let valid = issuance
+            .not_after
+            .as_deref()
+            .and_then(|date| chrono::DateTime::parse_from_rfc3339(date).ok())
+            .is_some_and(|expiry| expiry > now);
+        if valid && !issuance.revoked {
+            currently_valid += 1;
+        }
+        if let Some(start) = issuance.not_before
+            && earliest.as_ref().is_none_or(|current| &start < current)
+        {
+            earliest = Some(start);
+        }
+        if let Some(end) = issuance.not_after
+            && latest.as_ref().is_none_or(|current| &end > current)
+        {
+            latest = Some(end);
+        }
+    }
+    CertificateFinding {
+        domain: domain.to_string(),
+        hostnames: hostnames.into_iter().collect(),
+        issuers: issuers.into_iter().collect(),
+        certificates,
+        currently_valid,
+        earliest_not_before: earliest,
+        latest_not_after: latest,
+        source: "Cert Spotter (Certificate Transparency)".into(),
+    }
+}
+
+#[async_trait]
+impl OsintProvider for CertSpotterProvider {
+    provider_metadata! {
+        id: "certspotter",
+        name: "Certificate Transparency",
+        description: "Hostnames and issuers from certificates logged in public Certificate Transparency logs (via Cert Spotter).",
+        homepage: "https://sslmate.com/certspotter/",
+        targets: [TargetType::Domain],
+        capabilities: [ProviderCapability::DnsRecords],
+    }
+
+    fn allowed_hosts(&self) -> Vec<String> {
+        vec![host_of(&self.base)]
+    }
+
+    fn credential_requirement(&self) -> CredentialRequirement {
+        CredentialRequirement::Optional {
+            credential_id: spectre_core::credentials::ids::CERTSPOTTER_TOKEN.to_string(),
+            purpose: "The free tier allows 10 lookups an hour. An SSLMate API key raises that.".to_string(),
+        }
+    }
+
+    fn default_rate_limit_per_minute(&self) -> u32 {
+        1
+    }
+
+    async fn discover(&self, context: &ProviderContext, target: &InvestigationTarget) -> SpectreResult<Vec<FindingDraft>> {
+        let InvestigationTarget::Domain(domain) = target else { return Ok(Vec::new()) };
+        let mut url = endpoint(&self.base, &["v1", "issuances"]);
+        url.query_pairs_mut()
+            .append_pair("domain", domain)
+            .append_pair("include_subdomains", "true")
+            .append_pair("expand", "dns_names")
+            .append_pair("expand", "issuer");
+        let mut request = context.request(url.clone());
+        if let Some(token) = context.credentials.get(spectre_core::credentials::ids::CERTSPOTTER_TOKEN) {
+            request = request.sensitive_header("authorization", &format!("Bearer {}", token.as_str()))?;
+        }
+        let response = context.get(request).await?;
+        if response.status == 429 {
+            return Err(SpectreError::new(
+                ErrorCode::RateLimited,
+                "Cert Spotter's free tier (10 lookups an hour) is used up. Try later or add an SSLMate key in Settings > Providers.",
+            ));
+        }
+        let issuances: Vec<Issuance> = response.ensure_success()?.json()?;
+        if issuances.is_empty() {
+            return Ok(Vec::new());
+        }
+        let summary = summarize_issuances(domain, issuances, chrono::Utc::now());
+        Ok(vec![FindingDraft {
+            title: format!("Certificates for {domain}"),
+            summary: Some(format!(
+                "{} hostname(s) across {} certificate(s), {} currently valid",
+                summary.hostnames.len(),
+                summary.certificates,
+                summary.currently_valid
+            )),
+            confidence: observed_fact("Logged in public Certificate Transparency logs"),
+            verification_status: VerificationStatus::PubliclyObserved,
+            sources: vec![context.source(Some(format!("https://sslmate.com/certspotter/?domain={domain}")), DiscoveryMethod::PublicApi)],
+            data: FindingData::Certificates(summary),
+        }])
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Wayback Machine: https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
+// ---------------------------------------------------------------------------
+
+pub struct WaybackProvider {
+    base: Url,
+}
+
+impl Default for WaybackProvider {
+    fn default() -> Self {
+        Self { base: base_url("https://web.archive.org/") }
+    }
+}
+
+impl WaybackProvider {
+    pub fn with_base(base: Url) -> Self {
+        Self { base }
+    }
+
+    async fn capture(&self, context: &ProviderContext, domain: &str, limit: &str) -> SpectreResult<Option<String>> {
+        let mut url = endpoint(&self.base, &["cdx", "search", "cdx"]);
+        url.query_pairs_mut()
+            .append_pair("url", domain)
+            .append_pair("output", "json")
+            .append_pair("fl", "timestamp")
+            .append_pair("limit", limit);
+        let rows: Vec<Vec<String>> = context.get(context.request(url)).await?.ensure_success()?.json()?;
+        Ok(rows.into_iter().nth(1).and_then(|row| row.into_iter().next()).and_then(|stamp| wayback_timestamp(&stamp)))
+    }
+}
+
+/// `20080514210148` becomes `2008-05-14T21:01:48Z`.
+pub fn wayback_timestamp(stamp: &str) -> Option<String> {
+    let parsed = chrono::NaiveDateTime::parse_from_str(stamp, "%Y%m%d%H%M%S").ok()?;
+    Some(parsed.and_utc().to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+}
+
+#[async_trait]
+impl OsintProvider for WaybackProvider {
+    provider_metadata! {
+        id: "wayback",
+        name: "Wayback Machine",
+        description: "First and latest Internet Archive captures of the domain's homepage.",
+        homepage: "https://web.archive.org",
+        targets: [TargetType::Domain],
+        capabilities: [ProviderCapability::WebPresence],
+    }
+
+    fn allowed_hosts(&self) -> Vec<String> {
+        vec![host_of(&self.base)]
+    }
+
+    fn default_rate_limit_per_minute(&self) -> u32 {
+        15
+    }
+
+    async fn discover(&self, context: &ProviderContext, target: &InvestigationTarget) -> SpectreResult<Vec<FindingDraft>> {
+        let InvestigationTarget::Domain(domain) = target else { return Ok(Vec::new()) };
+        let Some(first) = self.capture(context, domain, "1").await? else { return Ok(Vec::new()) };
+        let last = self.capture(context, domain, "-1").await?.unwrap_or_else(|| first.clone());
+        let archive_url = format!("https://web.archive.org/web/*/{domain}");
+        Ok(vec![FindingDraft {
+            title: format!("Archive history of {domain}"),
+            summary: Some(format!("Captured from {} to {}", &first[..10], &last[..10])),
+            confidence: observed_fact("Recorded by the Internet Archive"),
+            verification_status: VerificationStatus::PubliclyObserved,
+            sources: vec![context.source(Some(archive_url.clone()), DiscoveryMethod::PublicApi)],
+            data: FindingData::WebArchive(WebArchiveFinding { url: domain.clone(), first_capture: first, last_capture: last, archive_url }),
         }])
     }
 }
@@ -455,5 +756,44 @@ mod tests {
         assert_eq!(parsed.registered_at.as_deref(), Some("2007-10-09T18:20:50Z"));
         assert_eq!(parsed.nameservers, vec!["ns1.example.net"]);
         assert_eq!(parsed.dnssec_signed, Some(false));
+    }
+
+    #[test]
+    fn security_header_review() {
+        let headers = vec![
+            ("strict-transport-security".to_string(), "max-age=300".to_string()),
+            ("content-security-policy".to_string(), "default-src 'self'; frame-ancestors 'none'".to_string()),
+            ("server".to_string(), "nginx/1.18.0".to_string()),
+        ];
+        let (banner, checks) = review_security_headers(&headers);
+        assert_eq!(banner.as_deref(), Some("nginx/1.18.0"));
+        let find = |name: &str| checks.iter().find(|check| check.header.starts_with(name)).unwrap();
+        assert!(find("Strict-Transport").note.as_deref().unwrap().contains("300"));
+        assert!(find("X-Frame-Options").present, "frame-ancestors in CSP counts");
+        assert!(!find("X-Content-Type-Options").present);
+        assert!(find("Server banner").note.is_some());
+        let (_, clean) = review_security_headers(&[("strict-transport-security".into(), "max-age=31536000; includeSubDomains".into())]);
+        assert!(clean[0].note.is_none());
+    }
+
+    #[test]
+    fn certificate_summary() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-11-05T00:00:00Z").unwrap().with_timezone(&chrono::Utc);
+        let issuances: Vec<Issuance> = serde_json::from_value(serde_json::json!([
+            {"dns_names": ["*.example.org", "example.org"], "issuer": {"friendly_name": "Let's Encrypt"}, "not_before": "2026-09-01T00:00:00Z", "not_after": "2026-12-01T00:00:00Z", "revoked": false},
+            {"dns_names": ["mail.example.org", "other.test"], "issuer": {"name": "C=US, O=Example CA"}, "not_before": "2024-01-01T00:00:00Z", "not_after": "2025-01-01T00:00:00Z"}
+        ]))
+        .unwrap();
+        let summary = summarize_issuances("example.org", issuances, now);
+        assert_eq!(summary.hostnames, vec!["example.org", "mail.example.org"]);
+        assert_eq!(summary.issuers, vec!["C=US, O=Example CA", "Let's Encrypt"]);
+        assert_eq!((summary.certificates, summary.currently_valid), (2, 1));
+        assert_eq!(summary.earliest_not_before.as_deref(), Some("2024-01-01T00:00:00Z"));
+    }
+
+    #[test]
+    fn wayback_timestamps() {
+        assert_eq!(wayback_timestamp("20080514210148").as_deref(), Some("2008-05-14T21:01:48Z"));
+        assert_eq!(wayback_timestamp("garbage"), None);
     }
 }

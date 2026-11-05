@@ -37,11 +37,13 @@ The `website` provider is the exception, because it has to contact the investiga
 
 Targets are normalized before any provider sees them. Usernames have a strict character set, email local parts must be RFC 5322 dot-atoms, domains go through IDNA, and phone numbers become E.164. Path segments are percent-encoded on top of that. Response bodies have size caps, and transport errors never include the URL, since it can contain the identifier being investigated.
 
-One privacy tradeoff: DNS lookups go over Cloudflare's DNS-over-HTTPS service, so Cloudflare sees the names being queried.
+One privacy tradeoff: DNS lookups go over Cloudflare's DNS-over-HTTPS service, so Cloudflare sees the names being queried. The same goes for the other services Spectre asks about a target: Cert Spotter and the Wayback Machine see the domain, keys.openpgp.org sees the email address, and each site in the profile-page catalog sees the username.
+
+The profile-page checks follow stricter rules than ordinary providers. Every site's host is on the allowlist individually, requests are plain GETs with no custom headers or cookies, and any site that answered with a bot challenge during testing was left out rather than worked around.
 
 ## Credentials
 
-The HIBP and GitHub keys live only in your Keychain, with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. At launch the app hands them to the engine in memory, where they sit in `Zeroizing<String>` and go out as sensitive headers that `Debug` output redacts. They never reach the database, the logs, exports or the diagnostics screen. The CLI reads them from environment variables instead.
+The HIBP, GitHub and Cert Spotter keys live only in your Keychain, with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. At launch the app hands them to the engine in memory, where they sit in `Zeroizing<String>` and go out as sensitive headers that `Debug` output redacts. They never reach the database, the logs, exports or the diagnostics screen. The CLI reads them from environment variables instead.
 
 ## Passwords
 
@@ -71,7 +73,7 @@ Spectre doesn't encrypt the database itself, so turn on FileVault. The planned n
 
 ## Things Spectre will not do
 
-Credential stuffing, password spraying, account takeover, getting past CAPTCHAs or bot protection, bulk plaintext-password recovery, pulling leaked hashes for arbitrary people, showing recovered credentials, Holehe-style account enumeration, or guessing someone's location from a phone number.
+Credential stuffing, password spraying, account takeover, getting past CAPTCHAs or bot protection, bulk plaintext-password recovery, pulling leaked hashes for arbitrary people, showing recovered credentials, Holehe-style account enumeration, or guessing someone's location from a phone number. This is also why Spectre has none of gosearch's breach lookups: ProxyNova's COMB search hands back plaintext passwords for whoever you type in.
 
 ## Supply chain
 

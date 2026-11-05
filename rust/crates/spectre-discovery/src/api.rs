@@ -191,6 +191,14 @@ impl Engine {
                 .map_err(|_| SpectreError::internal("event wait failed"))?;
                 to_value(batch)
             }
+            "investigation.suggestions" => to_value(self.follow_ups(params::<IdParams>(parameters)?.id).await?),
+            "sites.catalog" => {
+                let catalog = spectre_providers::username::sites::catalog();
+                let sites: Vec<Value> =
+                    catalog.sites.iter().map(|site| json!({ "name": site.name, "category": site.category, "url": site.url })).collect();
+                Ok(json!({ "verified_on": catalog.verified_on, "sites": sites }))
+            }
+            "sites.verify" => to_value(self.verify_site_catalog().await),
             "investigation.correlate" => to_value(self.correlate(params::<IdParams>(parameters)?.id).await?),
             "investigation.export_json" => to_value(self.storage().export_bundle(params::<IdParams>(parameters)?.id).await?),
             "investigation.export_csv" => {

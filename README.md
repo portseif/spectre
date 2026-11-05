@@ -10,12 +10,12 @@ Spectre won't enumerate private accounts, get around CAPTCHAs or rate limits, or
 
 | Input | Sources |
 |---|---|
-| Username | GitHub, GitLab, Codeberg, Keybase (signed proofs), Mastodon (rel="me" verified links), Bluesky, Hacker News, DEV, Hugging Face, Docker Hub, Chess.com, Lichess and Wikipedia, all through their documented public APIs |
-| Email | Mail-domain checks (MX, implicit MX, null MX, SPF, DMARC) and public Gravatar profiles. Have I Been Pwned breach data once ownership is verified |
+| Username | 13 platforms through their documented APIs (GitHub, GitLab, Codeberg, Keybase, Mastodon, Bluesky, Hacker News, DEV, Hugging Face, Docker Hub, Chess.com, Lichess, Wikipedia), plus profile-page checks on 34 more sites from a catalog Spectre maintains and self-tests |
+| Email | Mail-domain checks (MX, implicit MX, null MX, SPF, DMARC), public Gravatar profiles and OpenPGP keys on keys.openpgp.org. Have I Been Pwned breach data once ownership is verified |
 | Phone | E.164 normalization, country code, region and line type from offline numbering-plan data. There are no reverse lookups and no location guessing |
-| Domain | DNS records and mail security, RDAP registration, the site's rel="me" links and security.txt, and public breach history for the service |
+| Domain | DNS records and mail security, RDAP registration, Certificate Transparency hostnames, Wayback Machine history, the homepage's security headers, rel="me" links and security.txt, and public breach history for the service |
 
-Results appear as each provider answers, and you can cancel a run at any point.
+Results appear as each provider answers, and you can cancel a run at any point. When a run finishes, the Follow-ups tab lists the identifiers it turned up (linked handles, published addresses, websites, other addresses on a PGP key). Spectre never investigates those on its own, but one click opens a new investigation with the target filled in.
 
 Correlation puts every relationship in a category (Confirmed, Strong Evidence, Possible, Weak Evidence or Unrelated) and lists the evidence for it. A username match on its own always lands at Weak Evidence. You can confirm or reject any relationship, and the decision survives when correlation reruns. The identity graph is a native view you can zoom, filter and collapse.
 
@@ -39,7 +39,7 @@ cd rust
 cargo run -p spectre-cli -- --db :memory: investigate username octocat --purpose "Self-assessment of my own accounts"
 ```
 
-Two credentials are optional and live in Settings > Providers. A Have I Been Pwned API key is needed for account breach lookups, and a GitHub token raises GitHub's rate limit. Nothing else needs a paid API.
+Three credentials are optional and live in Settings > Providers. A Have I Been Pwned API key is needed for account breach lookups. A GitHub token raises GitHub's rate limit, and a Cert Spotter key lifts its free tier of 10 lookups an hour. Nothing else needs a paid API.
 
 ## Tests
 
@@ -47,7 +47,7 @@ Two credentials are optional and live in Settings > Providers. A Have I Been Pwn
 scripts/test.sh
 ```
 
-The script runs `cargo fmt --check`, clippy with warnings as errors, 88 Rust tests, an offline CLI end-to-end test and 17 Swift tests. Some of the Swift tests call the real engine over the FFI. No test touches a live external API.
+The script runs `cargo fmt --check`, clippy with warnings as errors, 101 Rust tests, an offline CLI end-to-end test and 20 Swift tests. Some of the Swift tests call the real engine over the FFI. No test touches a live external API.
 
 ## Layout
 

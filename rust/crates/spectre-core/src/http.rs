@@ -208,6 +208,8 @@ pub struct HttpResponse {
     pub from_cache: bool,
     pub retry_after: Option<Duration>,
     pub final_url: Url,
+    /// Response headers, lowercased names. Empty for cached responses.
+    pub headers: Vec<(String, String)>,
 }
 
 impl HttpResponse {
@@ -223,6 +225,11 @@ impl HttpResponse {
 
     pub fn text(&self) -> String {
         String::from_utf8_lossy(&self.body).into_owned()
+    }
+
+    /// First value of a header (case-insensitive name).
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.headers.iter().find(|(key, _)| key.eq_ignore_ascii_case(name)).map(|(_, value)| value.as_str())
     }
 
     /// Map non-success statuses to structured errors.
@@ -511,6 +518,7 @@ impl HttpClient {
             from_cache: true,
             retry_after: None,
             final_url: entry.final_url.clone(),
+            headers: Vec::new(),
         })
     }
 
@@ -590,6 +598,7 @@ impl HttpClient {
                                     from_cache: false,
                                     retry_after,
                                     final_url: response.url().clone(),
+                                    headers: collect_headers(response.headers()),
                                 });
                             }
                             None => backoff_delay(settings.retry_base_delay, attempt),
@@ -602,11 +611,12 @@ impl HttpClient {
                         continue;
                     }
                     let final_url = response.url().clone();
+                    let headers = collect_headers(response.headers());
                     let body = tokio::select! {
                         _ = cancellation.cancelled() => return Err(SpectreError::cancelled()),
                         body = read_limited(response, MAX_BODY_BYTES) => body?,
                     };
-                    let response = HttpResponse { status, body: Arc::new(body), from_cache: false, retry_after, final_url };
+                    let response = HttpResponse { status, body: Arc::new(body), from_cache: false, retry_after, final_url, headers };
                     if request.cacheable {
                         self.cache_store(cache_key, &response, settings.cache_ttl);
                     }
@@ -676,11 +686,12 @@ impl HttpClient {
                 continue;
             }
             let final_url = response.url().clone();
+            let headers = collect_headers(response.headers());
             let body = tokio::select! {
                 _ = cancellation.cancelled() => return Err(SpectreError::cancelled()),
                 body = read_limited(response, MAX_WEB_BODY_BYTES) => body?,
             };
-            return Ok(HttpResponse { status, body: Arc::new(body), from_cache: false, retry_after: None, final_url });
+            return Ok(HttpResponse { status, body: Arc::new(body), from_cache: false, retry_after: None, final_url, headers });
         }
         Err(policy_violation("too many redirects"))
     }
@@ -712,6 +723,29 @@ pub async fn validate_public_web_url(url: &Url) -> SpectreResult<(String, Vec<So
         return Err(policy_violation(format!("{host} resolves to non-public address {}", blocked.ip())));
     }
     Ok((host, resolved))
+}
+
+/// Headers worth keeping: security policy, banners, rate limits. Never cookies.
+const KEPT_HEADERS: [&str; 12] = [
+    "strict-transport-security",
+    "content-security-policy",
+    "x-content-type-options",
+    "x-frame-options",
+    "referrer-policy",
+    "permissions-policy",
+    "cross-origin-opener-policy",
+    "server",
+    "x-powered-by",
+    "content-type",
+    "x-ratelimit-remaining",
+    "location",
+];
+
+fn collect_headers(headers: &HeaderMap) -> Vec<(String, String)> {
+    KEPT_HEADERS
+        .iter()
+        .filter_map(|name| headers.get(*name).and_then(|value| value.to_str().ok()).map(|value| (name.to_string(), value.to_string())))
+        .collect()
 }
 
 async fn read_limited(mut response: reqwest::Response, limit: usize) -> SpectreResult<Vec<u8>> {

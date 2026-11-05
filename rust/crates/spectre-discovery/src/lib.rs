@@ -250,6 +250,7 @@ impl Engine {
             credentials: Arc::clone(&self.credentials),
             cancellation,
             stats,
+            sink: None,
         }
     }
 
@@ -375,6 +376,31 @@ impl Engine {
         storage.replace_graph(investigation_id, &result.graph).await?;
         storage.update_finding_confidence(&result.finding_confidence).await?;
         Ok(result.graph)
+    }
+
+    /// Identifiers the findings point to, flagged when already investigated.
+    pub async fn follow_ups(&self, investigation_id: Uuid) -> SpectreResult<Vec<spectre_correlation::FollowUp>> {
+        let storage = self.storage();
+        let investigation = storage.get_investigation(investigation_id).await?;
+        let findings = storage.findings_for(investigation_id).await?;
+        let existing: HashSet<(TargetType, String)> = storage
+            .list_investigations(500, 0, None)
+            .await?
+            .into_iter()
+            .map(|item| (item.target_type, item.target.value().to_ascii_lowercase()))
+            .collect();
+        let mut suggestions = spectre_correlation::suggest_follow_ups(&investigation.target, &findings);
+        for suggestion in &mut suggestions {
+            suggestion.already_investigated = existing.contains(&(suggestion.target_type, suggestion.value.to_ascii_lowercase()));
+        }
+        Ok(suggestions)
+    }
+
+    /// Live self-test of the profile-page catalog (makes network requests).
+    pub async fn verify_site_catalog(&self) -> Vec<spectre_providers::username::sites::SiteVerification> {
+        let provider = spectre_providers::username::sites::SiteCheckProvider::default();
+        let context = self.context(provider.id(), provider.name(), CancellationToken::new(), Arc::new(RequestStats::default()));
+        spectre_providers::username::sites::verify_catalog(&context, &provider).await
     }
 
     pub async fn decide_relationship(&self, relationship_id: Uuid, decision: Option<InvestigatorDecision>) -> SpectreResult<IdentityGraph> {

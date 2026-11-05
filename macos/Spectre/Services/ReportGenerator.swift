@@ -92,7 +92,13 @@ enum ReportGenerator {
             case .emailIntelligence(let mail):
                 builder.field("Mail domain", "\(mail.domain) · accepts mail: \(mail.acceptsMail ? "yes" : "no") · SPF: \(mail.spf ?? "none") · DMARC: \(mail.dmarc ?? "none")")
             case .domainRegistration(let registration):
-                builder.field("Registration", "\(registration.registrar ?? "registrar not disclosed") · registered \(registration.registeredAt ?? "?") · expires \(registration.expiresAt ?? "?")")
+                builder.field("Registration", "\(registration.registrar ?? "registrar not disclosed"), registered \(registration.registeredAt ?? "?"), expires \(registration.expiresAt ?? "?")")
+            case .certificates(let certificates):
+                builder.field("Certificates", "\(certificates.certificates) logged in Certificate Transparency, \(certificates.hostnames.count) hostnames, issuers: \(certificates.issuers.joined(separator: ", "))")
+            case .webArchive(let archive):
+                builder.field("Archive history", "first captured \(archive.firstCapture), latest \(archive.lastCapture)")
+            case .pgpKey(let key):
+                builder.field("OpenPGP key", "\(key.fingerprint) with confirmed user IDs: \(key.userIds.joined(separator: ", "))")
             default: break
             }
         }
@@ -140,8 +146,9 @@ enum ReportGenerator {
             case .emailIntelligence(let mail):
                 if mail.spf == nil { securityFindings.append("\(mail.domain) publishes no SPF record") }
                 if mail.dmarc == nil { securityFindings.append("\(mail.domain) publishes no DMARC policy") }
-            case .webPresence(let web) where web.securityTxt == nil:
-                securityFindings.append("No security.txt at \(web.url)")
+            case .webPresence(let web):
+                if web.securityTxt == nil { securityFindings.append("No security.txt at \(web.url)") }
+                securityFindings += (web.headerChecks ?? []).compactMap { check in check.note.map { "\(check.header): \($0)" } }
             case .profile(let profile) where profile.publicEmail != nil:
                 securityFindings.append("\(profile.platform) profile publicly discloses an email address")
             default: break

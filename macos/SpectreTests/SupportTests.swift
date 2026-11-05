@@ -68,4 +68,45 @@ struct SupportTests {
         #expect(first == second)
         #expect(first[graph.nodes[0].id] == .zero)
     }
+
+    @Test func decodesNewFindingTypesAndOlderWebFindings() throws {
+        let decoder = EngineCoding.decoder()
+        let certificates = try decoder.decode(FindingData.self, from: Data("""
+        {"kind":"certificates","detail":{"domain":"example.org","hostnames":["example.org","mail.example.org"],"issuers":["Let's Encrypt"],
+         "certificates":3,"currently_valid":1,"earliest_not_before":"2024-01-01T00:00:00Z","latest_not_after":null,"source":"Cert Spotter"}}
+        """.utf8))
+        guard case .certificates(let detail) = certificates else { Issue.record("expected certificates"); return }
+        #expect(detail.currentlyValid == 1)
+
+        // Findings saved before header checks existed have no such keys.
+        let older = try decoder.decode(FindingData.self, from: Data("""
+        {"kind":"web_presence","detail":{"url":"https://example.org/","status_code":200,"title":null,"description":null,
+         "rel_me_links":[],"profile_links":[],"security_txt":null}}
+        """.utf8))
+        guard case .webPresence(let web) = older else { Issue.record("expected web presence"); return }
+        #expect(web.headerChecks == nil)
+
+        let followUp = try decoder.decode(FollowUp.self, from: Data("""
+        {"target_type":"username","value":"octo_x","reason":"X account linked from the GitHub profile","source_finding_id":null,"already_investigated":true}
+        """.utf8))
+        #expect(followUp.alreadyInvestigated)
+        #expect(followUp.id == "username:octo_x")
+    }
+
+    @Test func manualSearchLinksQuoteAndEncodeTheTarget() {
+        let links = ManualSearch.links(for: InvestigationTarget(type: .domain, value: "example.org"))
+        #expect(links.count == 6)
+        #expect(links.allSatisfy { $0.url.scheme == "https" })
+        #expect(links[0].url.absoluteString.contains("%22example.org%22"))
+        let email = ManualSearch.links(for: InvestigationTarget(type: .email, value: "a+b@example.org"))
+        #expect(email.contains { $0.url.absoluteString.contains("a%2Bb") }, "plus signs must not turn into spaces")
+    }
+
+    @MainActor
+    @Test func preparingAFollowUpPrefillsTheForm() {
+        let model = AppModel(engine: PreviewEngine())
+        model.prepareInvestigation(type: .username, value: "octo_x")
+        #expect(model.selection == .newInvestigation)
+        #expect(model.draftTarget == DraftTarget(type: .username, value: "octo_x"))
+    }
 }

@@ -103,6 +103,56 @@ impl OsintProvider for MockProvider {
     }
 }
 
+/// Publishes one finding immediately, then keeps working.
+struct StreamingProvider;
+
+#[async_trait]
+impl OsintProvider for StreamingProvider {
+    fn id(&self) -> &str {
+        "streaming"
+    }
+    fn name(&self) -> &str {
+        "streaming"
+    }
+    fn description(&self) -> &str {
+        "mock"
+    }
+    fn homepage(&self) -> &str {
+        "https://example.invalid"
+    }
+    fn supported_targets(&self) -> Vec<TargetType> {
+        vec![TargetType::Username]
+    }
+    fn capabilities(&self) -> Vec<ProviderCapability> {
+        vec![ProviderCapability::ProfileLookup]
+    }
+    fn allowed_hosts(&self) -> Vec<String> {
+        Vec::new()
+    }
+    fn deadline(&self, _configured: Duration) -> Duration {
+        Duration::from_secs(5)
+    }
+
+    async fn discover(&self, context: &ProviderContext, target: &InvestigationTarget) -> SpectreResult<Vec<FindingDraft>> {
+        let draft = |platform: &str| FindingDraft {
+            title: format!("{platform} profile"),
+            summary: None,
+            confidence: Confidence::new(0.35, ConfidenceCategory::WeakEvidence, ["mock"]),
+            verification_status: VerificationStatus::PubliclyObserved,
+            sources: vec![context.source(None, DiscoveryMethod::PublicApi)],
+            data: FindingData::Profile(ProfileFinding {
+                platform: platform.into(),
+                username: target.value().into(),
+                profile_url: format!("https://{}.example.org/{}", platform.to_ascii_lowercase(), target.value()),
+                ..Default::default()
+            }),
+        };
+        assert!(context.publish(draft("Early")).is_none(), "the engine provides a sink");
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        Ok(vec![draft("Late")])
+    }
+}
+
 async fn engine_with(providers: Vec<Arc<dyn OsintProvider>>, configure: impl FnOnce(&mut EngineConfig)) -> Arc<Engine> {
     let mut config = EngineConfig { providers: Some(providers), allow_loopback_for_tests: true, ..Default::default() };
     configure(&mut config);
@@ -458,4 +508,22 @@ async fn backup_and_restore_round_trip() {
     assert!(engine.storage().get_investigation(investigation.id).await.is_err());
     engine.restore(backup.to_str().unwrap()).await.unwrap();
     assert_eq!(engine.storage().get_investigation(investigation.id).await.unwrap().findings_count, 1);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn providers_can_stream_findings_before_returning() {
+    let engine = engine_with(vec![Arc::new(StreamingProvider)], |_| {}).await;
+    let investigation = engine.start_investigation(request("ivy")).await.unwrap();
+    let events = wait_for(&engine, investigation.id).await;
+    let position = |predicate: &dyn Fn(&InvestigationEventKind) -> bool| events.iter().position(|event| predicate(&event.event)).unwrap();
+    let early = position(&|kind| matches!(kind, InvestigationEventKind::FindingDiscovered { finding } if finding.title == "Early profile"));
+    let completed = position(&|kind| matches!(kind, InvestigationEventKind::ProviderCompleted { .. }));
+    assert!(early < completed);
+    assert!(events.iter().any(|event| matches!(&event.event, InvestigationEventKind::ProviderCompleted { findings: 2, .. })));
+    assert_eq!(engine.storage().findings_for(investigation.id).await.unwrap().len(), 2);
+
+    let follow_ups = engine.call("investigation.suggestions", json!({ "id": investigation.id })).await.unwrap();
+    assert!(follow_ups.as_array().unwrap().is_empty());
+    let catalog = engine.call("sites.catalog", json!({})).await.unwrap();
+    assert!(catalog["sites"].as_array().unwrap().len() >= 30);
 }

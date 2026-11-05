@@ -305,6 +305,9 @@ pub enum FindingKind {
     DomainRegistration,
     WebPresence,
     BreachIncident,
+    Certificates,
+    PgpKey,
+    WebArchive,
 }
 
 impl FindingKind {
@@ -318,6 +321,9 @@ impl FindingKind {
             Self::DomainRegistration => "domain_registration",
             Self::WebPresence => "web_presence",
             Self::BreachIncident => "breach_incident",
+            Self::Certificates => "certificates",
+            Self::PgpKey => "pgp_key",
+            Self::WebArchive => "web_archive",
         }
     }
 }
@@ -334,6 +340,9 @@ pub enum FindingData {
     DomainRegistration(DomainRegistrationFinding),
     WebPresence(WebPresenceFinding),
     BreachIncident(BreachFinding),
+    Certificates(CertificateFinding),
+    PgpKey(PgpKeyFinding),
+    WebArchive(WebArchiveFinding),
 }
 
 impl FindingData {
@@ -347,6 +356,9 @@ impl FindingData {
             Self::DomainRegistration(_) => FindingKind::DomainRegistration,
             Self::WebPresence(_) => FindingKind::WebPresence,
             Self::BreachIncident(_) => FindingKind::BreachIncident,
+            Self::Certificates(_) => FindingKind::Certificates,
+            Self::PgpKey(_) => FindingKind::PgpKey,
+            Self::WebArchive(_) => FindingKind::WebArchive,
         }
     }
 }
@@ -463,6 +475,59 @@ pub struct WebPresenceFinding {
     /// Links to known social/profile platforms found on the page.
     pub profile_links: Vec<String>,
     pub security_txt: Option<SecurityTxt>,
+    /// `Server` / `X-Powered-By` banners, when the site discloses them.
+    #[serde(default)]
+    pub server_banner: Option<String>,
+    /// Passive review of security-relevant response headers.
+    #[serde(default)]
+    pub header_checks: Vec<HeaderCheck>,
+}
+
+/// One security header on the homepage response.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HeaderCheck {
+    pub header: String,
+    pub present: bool,
+    pub value: Option<String>,
+    /// Plain-language note when the header is missing or weak.
+    pub note: Option<String>,
+}
+
+/// Certificates logged in Certificate Transparency for a domain.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CertificateFinding {
+    pub domain: String,
+    /// Distinct hostnames seen in certificate SANs (wildcards stripped).
+    pub hostnames: Vec<String>,
+    pub issuers: Vec<String>,
+    pub certificates: u32,
+    pub currently_valid: u32,
+    pub earliest_not_before: Option<String>,
+    pub latest_not_after: Option<String>,
+    pub source: String,
+}
+
+/// A public OpenPGP key published for an address on a verifying keyserver.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PgpKeyFinding {
+    pub email: String,
+    pub fingerprint: String,
+    pub algorithm: String,
+    pub bits: Option<u32>,
+    pub created_at: Option<String>,
+    pub expires_at: Option<String>,
+    /// User IDs the keyserver has verified (for keys.openpgp.org: confirmed addresses).
+    pub user_ids: Vec<String>,
+    pub keyserver: String,
+}
+
+/// Capture history of a URL in the Internet Archive's Wayback Machine.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WebArchiveFinding {
+    pub url: String,
+    pub first_capture: String,
+    pub last_capture: String,
+    pub archive_url: String,
 }
 
 // ---------------------------------------------------------------------------

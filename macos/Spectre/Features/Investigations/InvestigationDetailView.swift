@@ -10,6 +10,7 @@ struct InvestigationDetailView: View {
         case identities = "Identities"
         case breaches = "Breaches"
         case risk = "Risk"
+        case followUps = "Follow-ups"
         case diagnostics = "Run Details"
         var id: String { rawValue }
     }
@@ -31,6 +32,7 @@ struct InvestigationDetailView: View {
             case .identities: RelationshipList(session: session)
             case .breaches: BreachExposureTab(session: session)
             case .risk: RiskIndicatorsTab(findings: session.findings)
+            case .followUps: FollowUpsTab(investigationID: session.id, target: session.investigation?.target, isRunning: session.isRunning)
             case .diagnostics: RunDetailsTab(investigation: session.investigation, providerStates: session.providerStates)
             }
         }
@@ -343,8 +345,13 @@ private struct RiskIndicatorsTab: View {
                 items.append(("at.badge.plus", Theme.secondaryAccent, "\(association.email) is publicly associated (\(association.sourceDescription))"))
             case .profile(let profile) where profile.publicEmail != nil:
                 items.append(("person.crop.circle.badge.exclamationmark", Theme.secondaryAccent, "\(profile.platform) profile publishes an email address"))
-            case .webPresence(let web) where web.securityTxt == nil:
-                items.append(("doc.badge.ellipsis", Theme.secondaryText, "No security.txt published at \(web.url)"))
+            case .webPresence(let web):
+                if web.securityTxt == nil {
+                    items.append(("doc.badge.ellipsis", Theme.secondaryText, "No security.txt published at \(web.url)"))
+                }
+                for check in web.headerChecks ?? [] {
+                    if let note = check.note { items.append(("lock.trianglebadge.exclamationmark", Theme.warning, "\(check.header): \(note)")) }
+                }
             default:
                 break
             }

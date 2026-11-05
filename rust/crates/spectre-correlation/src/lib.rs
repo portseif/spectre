@@ -530,6 +530,29 @@ pub fn correlate(
                     }
                 }
             }
+            FindingData::PgpKey(key) => {
+                let anchor_email = key.email.to_ascii_lowercase();
+                let anchor = builder.node(IdentityKind::Email, &anchor_email, anchor_email.clone(), None, Some(finding.id));
+                let short: String = key.fingerprint.chars().skip(key.fingerprint.len().saturating_sub(16)).collect();
+                for email in key.user_ids.iter().filter_map(|uid| email_in_user_id(uid)) {
+                    if email == anchor_email {
+                        continue;
+                    }
+                    let other = builder.node(IdentityKind::Email, &email, email.clone(), None, Some(finding.id));
+                    builder.evidence(
+                        anchor,
+                        other,
+                        RelationshipKind::PubliclyLinked,
+                        item(
+                            EvidenceSignal::PlatformVerifiedLink,
+                            weights::PLATFORM_VERIFIED_LINK,
+                            format!("Both addresses are confirmed user IDs on OpenPGP key {short}"),
+                            finding,
+                            None,
+                        ),
+                    );
+                }
+            }
             FindingData::BreachIncident(breach) => {
                 let breach_node = builder.node(
                     IdentityKind::Breach,
@@ -585,6 +608,18 @@ pub fn correlate(
     }
     CorrelationResult { graph, finding_confidence }
 }
+
+/// The address in an OpenPGP user ID (`Name <a@b>` or a bare address).
+pub fn email_in_user_id(user_id: &str) -> Option<String> {
+    let candidate = match (user_id.rfind('<'), user_id.rfind('>')) {
+        (Some(start), Some(end)) if start < end => &user_id[start + 1..end],
+        _ => user_id,
+    };
+    spectre_core::target::normalize_email(candidate).ok()
+}
+
+mod follow_ups;
+pub use follow_ups::{FollowUp, suggest_follow_ups};
 
 #[cfg(test)]
 mod tests;

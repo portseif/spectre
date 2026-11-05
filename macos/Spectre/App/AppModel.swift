@@ -33,6 +33,11 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+struct DraftTarget: Equatable {
+    let type: TargetType
+    let value: String
+}
+
 /// What the right-hand inspector shows.
 enum InspectorItem: Hashable {
     case finding(Finding)
@@ -60,6 +65,8 @@ final class AppModel {
     private(set) var investigations: [Investigation] = []
     private(set) var listError: String?
     var searchText = ""
+    /// Prefill for the New Investigation form (set from suggested follow-ups).
+    var draftTarget: DraftTarget?
     @ObservationIgnored private var sessions: [UUID: InvestigationViewModel] = [:]
 
     init() {}
@@ -130,6 +137,13 @@ final class AppModel {
         let session = session(for: investigation.id)
         session?.begin(with: investigation)
         open(investigation.id)
+    }
+
+    /// Open the New Investigation form prefilled. The investigator still
+    /// has to record an authorization basis before it starts.
+    func prepareInvestigation(type: TargetType, value: String) {
+        draftTarget = DraftTarget(type: type, value: value)
+        selection = .newInvestigation
     }
 
     func open(_ investigationID: UUID) {

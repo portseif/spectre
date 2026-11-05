@@ -1,6 +1,7 @@
 //! Investigation execution: bounded-concurrency provider fan-out with
 //! incremental persistence and streaming.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -59,6 +60,33 @@ impl Engine {
         self.events.push(investigation_id, InvestigationEventKind::Finished { status, metrics });
     }
 
+    async fn record_finding(
+        &self,
+        storage: &spectre_storage::Storage,
+        investigation_id: Uuid,
+        provider_id: &str,
+        draft: FindingDraft,
+        requested_at: Instant,
+        time_to_first_finding: &mut Option<u64>,
+    ) -> SpectreResult<()> {
+        let finding = Finding {
+            id: Uuid::new_v4(),
+            investigation_id,
+            provider_id: provider_id.to_string(),
+            title: draft.title,
+            summary: draft.summary,
+            confidence: draft.confidence,
+            verification_status: draft.verification_status,
+            discovered_at: Utc::now(),
+            sources: draft.sources,
+            data: draft.data,
+        };
+        storage.insert_finding(&finding).await?;
+        time_to_first_finding.get_or_insert_with(|| requested_at.elapsed().as_millis() as u64);
+        self.events.push(investigation_id, InvestigationEventKind::FindingDiscovered { finding: Box::new(finding) });
+        Ok(())
+    }
+
     async fn execute(
         &self,
         investigation: &Investigation,
@@ -77,6 +105,9 @@ impl Engine {
         let total = providers.len();
         let first_dispatch = Arc::new(std::sync::OnceLock::<Duration>::new());
 
+        // Providers may publish findings before they return (see
+        // `ProviderContext::publish`); everything funnels through this channel.
+        let (sink, mut streamed) = tokio::sync::mpsc::unbounded_channel::<(String, FindingDraft)>();
         let mut runs = futures::stream::FuturesUnordered::new();
         for provider in providers {
             let semaphore = Arc::clone(&semaphore);
@@ -84,6 +115,7 @@ impl Engine {
             let stats = Arc::clone(&stats);
             let first_dispatch = Arc::clone(&first_dispatch);
             let target = investigation.target.clone();
+            let sink = sink.clone();
             runs.push(async move {
                 let provider_id = provider.id().to_string();
                 let permit = tokio::select! {
@@ -95,46 +127,55 @@ impl Engine {
                 };
                 let _ = first_dispatch.set(requested_at.elapsed());
                 self.events.push(investigation_id, InvestigationEventKind::ProviderStarted { provider_id: provider_id.clone() });
-                let context = self.context(provider.id(), provider.name(), cancellation.clone(), stats);
+                let mut context = self.context(provider.id(), provider.name(), cancellation.clone(), stats);
+                context.sink = Some(sink);
+                let deadline = provider.deadline(provider_timeout);
                 let started = Instant::now();
                 let result = tokio::select! {
                     _ = cancellation.cancelled() => Err(SpectreError::cancelled()),
-                    result = tokio::time::timeout(provider_timeout, provider.discover(&context, &target)) => result.unwrap_or_else(|_| {
-                        Err(SpectreError::new(ErrorCode::Timeout, format!("{} did not finish within {}s", provider.name(), provider_timeout.as_secs())))
+                    result = tokio::time::timeout(deadline, provider.discover(&context, &target)) => result.unwrap_or_else(|_| {
+                        Err(SpectreError::new(ErrorCode::Timeout, format!("{} did not finish within {}s", provider.name(), deadline.as_secs())))
                     }),
                 };
                 ProviderRun { provider_id, result, latency: started.elapsed() }
             });
         }
+        drop(sink);
 
         let mut completed = 0usize;
         let mut failures = 0usize;
         let mut cancelled_runs = 0usize;
         let mut time_to_first_finding = None;
         let mut latencies = Vec::with_capacity(total);
+        let mut streamed_counts: HashMap<String, u32> = HashMap::new();
 
-        while let Some(run) = runs.next().await {
+        loop {
+            let run = tokio::select! {
+                biased;
+                Some((provider_id, draft)) = streamed.recv() => {
+                    self.record_finding(&storage, investigation_id, &provider_id, draft, requested_at, &mut time_to_first_finding).await?;
+                    *streamed_counts.entry(provider_id).or_default() += 1;
+                    continue;
+                }
+                run = runs.next() => match run {
+                    Some(run) => run,
+                    None => break,
+                },
+            };
+            // Anything the provider published before returning is already queued.
+            while let Ok((provider_id, draft)) = streamed.try_recv() {
+                self.record_finding(&storage, investigation_id, &provider_id, draft, requested_at, &mut time_to_first_finding).await?;
+                *streamed_counts.entry(provider_id).or_default() += 1;
+            }
             completed += 1;
             let latency_ms = run.latency.as_millis() as u64;
+            let published = streamed_counts.get(&run.provider_id).copied().unwrap_or(0);
             match run.result {
                 Ok(drafts) => {
-                    let count = drafts.len() as u32;
+                    let count = drafts.len() as u32 + published;
                     for draft in drafts {
-                        let finding = Finding {
-                            id: Uuid::new_v4(),
-                            investigation_id,
-                            provider_id: run.provider_id.clone(),
-                            title: draft.title,
-                            summary: draft.summary,
-                            confidence: draft.confidence,
-                            verification_status: draft.verification_status,
-                            discovered_at: Utc::now(),
-                            sources: draft.sources,
-                            data: draft.data,
-                        };
-                        storage.insert_finding(&finding).await?;
-                        time_to_first_finding.get_or_insert_with(|| requested_at.elapsed().as_millis() as u64);
-                        self.events.push(investigation_id, InvestigationEventKind::FindingDiscovered { finding: Box::new(finding) });
+                        self.record_finding(&storage, investigation_id, &run.provider_id, draft, requested_at, &mut time_to_first_finding)
+                            .await?;
                     }
                     latencies.push(ProviderLatency {
                         provider_id: run.provider_id.clone(),
@@ -163,7 +204,7 @@ impl Engine {
                         cancelled_runs += 1;
                         ProviderOutcome::Cancelled
                     };
-                    latencies.push(ProviderLatency { provider_id: run.provider_id, latency_ms, outcome, findings: 0 });
+                    latencies.push(ProviderLatency { provider_id: run.provider_id, latency_ms, outcome, findings: published });
                 }
             }
             let progress = completed as f64 / total.max(1) as f64;

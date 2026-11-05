@@ -61,6 +61,9 @@ struct FindingDetailContent: View {
         case .domainRegistration(let registration): RegistrationDetail(registration: registration)
         case .webPresence(let web): WebPresenceDetail(web: web)
         case .breachIncident(let breach): BreachIncidentDetail(incident: breach.incident, exposedAccount: breach.exposedAccount)
+        case .certificates(let certificates): CertificateDetail(certificates: certificates)
+        case .pgpKey(let key): PgpKeyDetail(key: key)
+        case .webArchive(let archive): WebArchiveDetail(archive: archive)
         }
     }
 }
@@ -244,6 +247,71 @@ private struct WebPresenceDetail: View {
                 Text("security.txt").font(.subheadline.weight(.semibold))
                 ForEach(security.contacts, id: \.self) { KeyValueRow(label: "Contact", value: $0) }
                 if let expires = security.expires { KeyValueRow(label: "Expires", value: expires) }
+            }
+            if let checks = web.headerChecks, !checks.isEmpty {
+                Text("Security headers").font(.subheadline.weight(.semibold))
+                ForEach(checks, id: \.self) { check in
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: check.note == nil ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundStyle(check.note == nil ? Theme.success : Theme.warning)
+                            .accessibilityLabel(check.note == nil ? Text("OK") : Text("Needs attention"))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(check.header).font(.callout)
+                            if let note = check.note { Text(note).font(.caption).foregroundStyle(.spectreSecondary) }
+                        }
+                    }
+                }
+            }
+            if let banner = web.serverBanner { KeyValueRow(label: "Server", value: banner) }
+        }
+    }
+}
+
+private struct CertificateDetail: View {
+    let certificates: CertificateFinding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            KeyValueRow(label: "Certificates", value: "\(certificates.certificates) logged, \(certificates.currentlyValid) valid now")
+            if let first = certificates.earliestNotBefore { KeyValueRow(label: "Earliest", value: first) }
+            if let last = certificates.latestNotAfter { KeyValueRow(label: "Latest expiry", value: last) }
+            KeyValueRow(label: "Issuers", value: certificates.issuers.joined(separator: "\n"))
+            Text("Hostnames (\(certificates.hostnames.count))").font(.subheadline.weight(.semibold))
+            ForEach(certificates.hostnames.prefix(100), id: \.self) { host in
+                Text(host).font(.caption.monospaced()).textSelection(.enabled)
+            }
+            Text("Source: \(certificates.source)").font(.caption2).foregroundStyle(.spectreSecondary)
+        }
+    }
+}
+
+private struct PgpKeyDetail: View {
+    let key: PgpKeyFinding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            KeyValueRow(label: "Fingerprint", value: key.fingerprint)
+            KeyValueRow(label: "Algorithm", value: [key.algorithm, key.bits.map { "\($0) bits" }].compactMap { $0 }.joined(separator: ", "))
+            if let created = key.createdAt { KeyValueRow(label: "Created", value: created) }
+            if let expires = key.expiresAt { KeyValueRow(label: "Expires", value: expires) }
+            Text("Confirmed user IDs").font(.subheadline.weight(.semibold))
+            ForEach(key.userIds, id: \.self) { Text($0).font(.callout).textSelection(.enabled) }
+            Text("\(key.keyserver) only lists an address after its owner confirms it by email.")
+                .font(.caption)
+                .foregroundStyle(.spectreSecondary)
+        }
+    }
+}
+
+private struct WebArchiveDetail: View {
+    let archive: WebArchiveFinding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            KeyValueRow(label: "First capture", value: archive.firstCapture)
+            KeyValueRow(label: "Latest capture", value: archive.lastCapture)
+            if let url = URL(string: archive.archiveUrl) {
+                Link(destination: url) { Label("Browse captures", systemImage: "arrow.up.right.square") }.font(.callout)
             }
         }
     }

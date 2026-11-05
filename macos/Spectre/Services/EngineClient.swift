@@ -30,6 +30,7 @@ protocol EngineClient: Sendable {
     func deleteInvestigation(_ id: UUID) async throws
     func events(for id: UUID) -> AsyncThrowingStream<InvestigationEvent, any Error>
     func decide(relationship: UUID, decision: InvestigatorDecision?) async throws -> IdentityGraph
+    func followUps(_ id: UUID) async throws -> [FollowUp]
 
     func dashboard() async throws -> DashboardStats
     func providers() async throws -> ProviderListing
@@ -74,6 +75,7 @@ extension EngineClient {
     func deleteInvestigation(_ id: UUID) async throws { throw EngineError.unsupported() }
     func events(for id: UUID) -> AsyncThrowingStream<InvestigationEvent, any Error> { AsyncThrowingStream { $0.finish() } }
     func decide(relationship: UUID, decision: InvestigatorDecision?) async throws -> IdentityGraph { throw EngineError.unsupported() }
+    func followUps(_ id: UUID) async throws -> [FollowUp] { [] }
     func dashboard() async throws -> DashboardStats { throw EngineError.unsupported() }
     func providers() async throws -> ProviderListing { ProviderListing(providers: [], services: []) }
     func updateProvider(id: String, enabled: Bool, rateLimitPerMinute: UInt32?) async throws -> ProviderStatus { throw EngineError.unsupported() }

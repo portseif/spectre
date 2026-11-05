@@ -135,11 +135,19 @@ private struct FindingInspector: View {
         case .domainRegistration(let registration):
             return registration.dnssecSigned == false ? ["Consider enabling DNSSEC for the domain."] : ["No registration issues detected."]
         case .webPresence(let web):
-            return web.securityTxt == nil ? ["Publish /.well-known/security.txt so researchers can report issues (RFC 9116)."] : ["security.txt is published."]
+            var items = (web.headerChecks ?? []).compactMap { check in check.note.map { "\(check.header): \($0)" } }
+            if web.securityTxt == nil { items.append("Publish /.well-known/security.txt so researchers can report issues (RFC 9116).") }
+            return items.isEmpty ? ["No issues found on the homepage response."] : items
         case .emailAssociation:
             return ["Verify mailbox ownership before account-specific lookups."]
         case .phoneMetadata:
             return ["Numbering metadata only; no subscriber lookups are performed."]
+        case .certificates(let certificates):
+            return ["Review the \(certificates.hostnames.count) logged hostnames for forgotten or unexpected services."]
+        case .pgpKey:
+            return ["Other addresses on the same key are strong leads. Start them as separate investigations if they are in scope."]
+        case .webArchive:
+            return ["Old captures can show contacts, staff pages, or links that have since been removed."]
         }
     }
 }

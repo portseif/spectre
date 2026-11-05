@@ -46,7 +46,8 @@ Every response is an envelope, either `{"ok": ...}` or `{"error": {"code", "mess
 
 All methods go through `Engine::call(method, params)` in `spectre-discovery/src/api.rs`. They are grouped by prefix:
 
-- `investigation.*`: start, cancel, get, list, delete, events, correlate, export_json, export_csv, import
+- `investigation.*`: start, cancel, get, list, delete, events, correlate, suggestions, export_json, export_csv, import
+- `sites.catalog`, `sites.verify` (the profile-page catalog and its live self-test)
 - `relationship.decide`
 - `verification.*`, `breach.*`, `audit.*`
 - `settings.*`, `providers.*`, `credentials.*`
@@ -59,6 +60,10 @@ All methods go through `Engine::call(method, params)` in `spectre-discovery/src/
 3. As each provider returns, its findings are saved right away and emitted as events (`provider_started`, `finding_discovered`, `provider_completed` or `provider_failed`, `progress`). The UI shows them before the slower providers finish.
 4. After the last provider, correlation runs. It writes the identity graph and updates the confidence of profile findings, then the engine emits `correlation_updated` and finally `finished` with the run's metrics.
 5. The final status is `completed` when nothing failed, `partially_completed` when some providers failed, `failed` when all of them failed or were cancelled, and `cancelled` when the user stopped the run. If the process dies mid-run, the next launch marks that investigation `failed`.
+
+A provider doesn't have to wait until it returns to hand over findings. `ProviderContext::publish` sends a finding down a channel the engine reads alongside provider completions, so a provider that checks 34 sites can stream each hit as it lands. Before the engine handles a provider's completion it drains anything that provider already published, so the finding count in `provider_completed` is always right. Providers that fan out like that can also ask for a longer deadline through `OsintProvider::deadline`; `site-check` asks for 90 seconds.
+
+When a run is done, `investigation.suggestions` lists the identifiers the findings point to (linked handles, published emails, websites, other user IDs on a PGP key), marking the ones already investigated. The engine never starts them itself. Maigret follows discovered usernames recursively; Spectre leaves that step to the investigator so every target gets its own authorization record.
 
 Events sit in an in-memory queue per investigation (`events.rs`). Producers never block. The FFI waits on a `Condvar` and the CLI waits through `spawn_blocking`. A queue is dropped once its last event has been read.
 
