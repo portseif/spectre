@@ -40,6 +40,38 @@ extension View {
     }
 }
 
+/// Row or card button with fluid press feedback: it dips slightly on press
+/// and springs back. Honors Reduce Motion by dropping the scale.
+struct PressableRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        PressableRow(configuration: configuration)
+    }
+
+    private struct PressableRow: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        var body: some View {
+            configuration.label
+                .contentShape(.rect)
+                .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+                .opacity(configuration.isPressed ? 0.82 : 1)
+                .animation(reduceMotion ? .easeOut(duration: 0.1) : .snappy(duration: 0.22, extraBounce: 0.1), value: configuration.isPressed)
+        }
+    }
+}
+
+extension ButtonStyle where Self == PressableRowStyle {
+    static var pressableRow: PressableRowStyle { PressableRowStyle() }
+}
+
+extension View {
+    /// Negative tracking for large display text. Apple tightens letters as they
+    /// grow, since the same spacing reads too loose at display sizes. Body text
+    /// is left near zero, so only apply this to titles.
+    func displayTracking() -> some View { tracking(-0.4) }
+}
+
 /// Section title with an optional count.
 struct SectionHeader: View {
     let title: LocalizedStringKey

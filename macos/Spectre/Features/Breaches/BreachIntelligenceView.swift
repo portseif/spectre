@@ -253,7 +253,7 @@ struct BreachReportContent: View {
             Card {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text(report.email).font(.title2.weight(.semibold))
+                        Text(report.email).font(.title2.weight(.semibold)).displayTracking()
                         Spacer()
                         RiskBadge(level: report.risk.level)
                     }

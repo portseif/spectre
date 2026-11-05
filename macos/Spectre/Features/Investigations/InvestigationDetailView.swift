@@ -77,7 +77,7 @@ private struct InvestigationHeader: View {
                     .foregroundStyle(Theme.accent)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(session.investigation?.target.value ?? "…").font(.title2.weight(.semibold)).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                    Text(session.investigation?.target.value ?? "…").font(.title2.weight(.semibold)).displayTracking().lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                     Text(session.investigation?.purpose ?? "").font(.callout).foregroundStyle(.spectreSecondary).lineLimit(2)
                 }
                 .layoutPriority(1)

@@ -192,7 +192,7 @@ private struct AssociatedRecords: View {
                                 ConfidenceBadge(category: edge.category)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pressableRow)
                     }
                 }
             }

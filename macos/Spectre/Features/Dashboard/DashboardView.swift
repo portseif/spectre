@@ -67,7 +67,7 @@ private struct DashboardHeader: View {
 private struct DashboardTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Intelligence overview").font(.largeTitle.weight(.semibold))
+            Text("Intelligence overview").font(.largeTitle.weight(.semibold)).displayTracking()
             Text("Public discovery, evidence-based correlation, and authorized breach exposure.")
                 .foregroundStyle(.spectreSecondary)
         }
@@ -228,7 +228,7 @@ private struct RecentInvestigations: View {
                             createdAt: investigation.createdAt
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressableRow)
                 }
             }
         }

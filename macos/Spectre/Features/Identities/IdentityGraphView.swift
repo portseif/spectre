@@ -14,6 +14,7 @@ struct IdentityGraphView: View {
     @State private var committedScale: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var committedOffset: CGSize = .zero
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var visible: IdentityGraph { filter.visibleGraph(graph) }
 
@@ -55,7 +56,7 @@ struct IdentityGraphView: View {
             pinned: graph.nodes.first { $0.isTarget }?.id
         )
         let computed = await Task.detached(priority: .userInitiated) { layout.positions() }.value
-        withAnimation(.smooth(duration: 0.35)) { positions = computed }
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.35)) { positions = computed }
     }
 
     private func screenPoint(_ id: UUID, center: CGPoint, zoom: CGFloat) -> CGPoint? {
@@ -178,14 +179,14 @@ struct IdentityGraphView: View {
     }
 
     private func setScale(_ value: CGFloat) {
-        withAnimation(.smooth) {
+        withAnimation(reduceMotion ? nil : .smooth) {
             scale = min(max(value, 0.25), 4)
             committedScale = scale
         }
     }
 
     private func resetView() {
-        withAnimation(.smooth) {
+        withAnimation(reduceMotion ? nil : .smooth) {
             scale = 1
             committedScale = 1
             offset = .zero
