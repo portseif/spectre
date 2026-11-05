@@ -3,6 +3,7 @@ import SwiftUI
 struct NewInvestigationView: View {
     @Environment(AppModel.self) private var model
     @AppStorage("defaultTargetType") private var defaultTargetType: TargetType = .username
+    @AppStorage("lastAuthorizationBasis") private var lastBasis = ""
     @State private var targetType: TargetType = .username
     @State private var value = ""
     @State private var region = ""
@@ -45,8 +46,15 @@ struct NewInvestigationView: View {
             }
 
             Section {
-                TextField("Authorization basis and scope", text: $purpose, prompt: Text("e.g. Self-assessment of my own accounts; engagement #1234 for Acme Corp"), axis: .vertical)
-                    .lineLimit(3...6)
+                HStack(alignment: .top, spacing: 8) {
+                    TextField("Authorization basis and scope", text: $purpose, prompt: Text("e.g. engagement #1234 for Acme Corp"), axis: .vertical)
+                        .lineLimit(1...3)
+                    Button("Self-assessment") {
+                        purpose = Self.selfAssessmentBasis
+                        attested = true
+                    }
+                    .help("Fill in a self-assessment basis and confirm authorization")
+                }
                 Toggle("I am authorized to investigate this target for the purpose above", isOn: $attested)
             } header: {
                 Text("Authorization")
@@ -97,12 +105,15 @@ struct NewInvestigationView: View {
         .task {
             targetType = defaultTargetType
             applyDraft()
+            if purpose.isEmpty { purpose = lastBasis }
             await loadProviders()
         }
         .onChange(of: model.draftTarget) { _, _ in applyDraft() }
         .task(id: ValidationKey(type: targetType, value: value, region: region)) { await validate() }
         .onChange(of: targetType) { _, _ in resetProviderSelection() }
     }
+
+    private static let selfAssessmentBasis = "Self-assessment of my own accounts"
 
     private func applyDraft() {
         guard let draft = model.draftTarget else { return }
@@ -160,6 +171,7 @@ struct NewInvestigationView: View {
         Task {
             do {
                 try await model.start(request)
+                lastBasis = purpose.trimmingCharacters(in: .whitespacesAndNewlines)
                 value = ""
                 validation = nil
             } catch {
