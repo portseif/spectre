@@ -1,0 +1,20 @@
+[package]
+name = "spectre-correlation"
+description = "Evidence-based identity correlation and graph construction."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+spectre-core = { workspace = true }
+uuid = { workspace = true }
+url = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+chrono = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,37 @@
+# cargo-deny configuration: license allowlist, advisories, and sources.
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = [
+    # atomic-polyfill is unmaintained (not a vulnerability). Transitive via
+    # phonenumber -> postcard -> heapless 0.7. Re-evaluate when phonenumber
+    # updates its postcard dependency.
+    { id = "RUSTSEC-2023-0089", reason = "transitive via phonenumber; unmaintained notice only" },
+]
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0",
+    "MPL-2.0",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

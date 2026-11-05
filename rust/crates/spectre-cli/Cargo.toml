@@ -1,0 +1,27 @@
+[package]
+name = "spectre-cli"
+description = "Command-line interface to the Spectre engine."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "spectre"
+path = "src/main.rs"
+
+[dependencies]
+spectre-core = { workspace = true }
+spectre-discovery = { workspace = true }
+tokio = { workspace = true, features = ["signal"] }
+serde_json = { workspace = true }
+zeroize = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+
+
+[lints]
+workspace = true

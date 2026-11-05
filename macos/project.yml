@@ -1,0 +1,74 @@
+name: Spectre
+options:
+  bundleIdPrefix: io.portseif
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    SWIFT_STRICT_CONCURRENCY: complete
+    DEAD_CODE_STRIPPING: YES
+targets:
+  Spectre:
+    type: application
+    platform: macOS
+    sources:
+      - path: Spectre
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.portseif.Spectre
+        PRODUCT_NAME: Spectre
+        INFOPLIST_KEY_CFBundleDisplayName: Spectre
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Portseif. Authorized investigations only."
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: Spectre/Resources/Spectre.entitlements
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/../rust/crates/spectre-ffi/include
+        LIBRARY_SEARCH_PATHS: $(SRCROOT)/../rust/target/xcode/$(CONFIGURATION)
+        OTHER_LDFLAGS: -lspectre_ffi -framework Security -framework CoreFoundation -liconv
+      configs:
+        Debug:
+          ONLY_ACTIVE_ARCH: YES
+        Release:
+          # Universal builds need `rustup target add x86_64-apple-darwin`.
+          ARCHS: arm64
+    preBuildScripts:
+      - name: Build Rust engine
+        script: '"$SRCROOT/../scripts/build-rust-xcode.sh"'
+        basedOnDependencyAnalysis: false
+  SpectreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SpectreTests
+    dependencies:
+      - target: Spectre
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.portseif.SpectreTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Spectre.app/Contents/MacOS/Spectre
+        BUNDLE_LOADER: $(TEST_HOST)
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/../rust/crates/spectre-ffi/include
+        CODE_SIGN_IDENTITY: "-"
+schemes:
+  Spectre:
+    build:
+      targets:
+        Spectre: all
+        SpectreTests: [test]
+    test:
+      targets:
+        - SpectreTests
+      gatherCoverageData: true

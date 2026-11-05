@@ -1,0 +1,20 @@
+# Rust
+rust/target/
+
+# Xcode
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+macos/Spectre.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# Local data — never commit investigations or credentials
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+
+# macOS
+.DS_Store

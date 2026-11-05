@@ -1,0 +1,698 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2A312BCC2841262AE32E40A8 /* RustEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422BC4A317B2AC4BE1575F05 /* RustEngine.swift */; };
+		2F9B5BDEE55DACFAE1350585 /* SpectreApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE145F16F1DE0B375F229B9E /* SpectreApp.swift */; };
+		30A6D95D179016F417DF8F30 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4895C8EF6D645B7277BD5C55 /* ReportsView.swift */; };
+		33228CD5039D323894B3DC53 /* EngineCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1034095299F663B91AD7541F /* EngineCoding.swift */; };
+		38FB4C67258BFE411BADB233 /* GraphLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603BA6A4412A3DED5E39C2BE /* GraphLayout.swift */; };
+		4092D9B9BD76C804E6619073 /* EngineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BE973542179A60F58E64B74 /* EngineModels.swift */; };
+		48E15644B756DC41C9338E08 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCA713FCDC6327C7C7B594D /* KeychainStore.swift */; };
+		4A8EFAB32AD7D400C99ECD00 /* SupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD534DD00AD56BD43E4749BB /* SupportTests.swift */; };
+		5578A377C4CD49FB58A3789E /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B054811EBC52DCC72C264D0E /* InspectorView.swift */; };
+		569F569B072618222520ED32 /* ReportGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5818CE09D4C7F6DC13A6D392 /* ReportGenerator.swift */; };
+		5E4989009B213A77D59E9E7A /* Badges.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC66BA8DC7126FCF50CCE055 /* Badges.swift */; };
+		612E384CC136D3F16414F884 /* SecurityAuditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2DF22F7C15CDFCBB0C8496 /* SecurityAuditView.swift */; };
+		6F541E61B84DCF732F68BB70 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB704AA77A24D8AF2178C9E /* AppModel.swift */; };
+		7BEC2CEC215EC8CF698784EC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D240F47D0E5AA9E0950E324C /* SettingsView.swift */; };
+		7F42F10DFD3B28591D79BA42 /* InvestigationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBE91D881EFA6621F9FD845F /* InvestigationsView.swift */; };
+		806F42496C1B68741D3885D9 /* BreachIntelligenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DEA8C1AD56512EEDAEB6BE /* BreachIntelligenceView.swift */; };
+		8F7B139621A0FBFB22F8011F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA02F4D601BDADBC55776164 /* RootView.swift */; };
+		901E109D679D04C82FD788C3 /* InvestigationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B569D89A64CDB19752A7994 /* InvestigationViewModel.swift */; };
+		911813408E324867E4299F1C /* IdentitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BD7BC78130B999155B47E3B /* IdentitiesView.swift */; };
+		933E08A2C2B6F435A2FE1D44 /* InvestigationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82A632751FAC1F5BA74C316 /* InvestigationViewModelTests.swift */; };
+		A9F05F76B23371FB99D18219 /* RustEngineIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80FBDF7DDB763951862DBB8 /* RustEngineIntegrationTests.swift */; };
+		AEBE4DD18C78E802674858DA /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2CBD7D0284379BB705BC2A8 /* AppLog.swift */; };
+		BE2E3CF4640AD8A968DFCE2D /* EngineClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A4704B815200AE516A3AFB /* EngineClient.swift */; };
+		C5CE40099701F60047BA318C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A34BA918D60570DF013927E /* DashboardView.swift */; };
+		C64EFAB437F72A13D4EBA8A3 /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D2987A43BE4647C2FC408E /* PreviewData.swift */; };
+		E1D35645C1732CB6739A374D /* FindingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6960C041F691485D1491BD6E /* FindingViews.swift */; };
+		EA00D0AB6B39CDD16EA8708C /* NewInvestigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7031E6408DBD427E71B09128 /* NewInvestigationView.swift */; };
+		F50EDF36586009F531FE6AFC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2B19B877573242616F349E6C /* Assets.xcassets */; };
+		F5141E3A907C31777AC513A0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DF01A8D665F7FB42CF71FB /* Theme.swift */; };
+		F6962891C662410433069C04 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C03FA3722789DFAD8277EDB /* Card.swift */; };
+		F920513B08E519DA1166D817 /* IdentityGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A9F79954581BF731C008591 /* IdentityGraphView.swift */; };
+		FEA698F1A0322D34E9CD0147 /* InvestigationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D22F1CF526D4B56E56B94A /* InvestigationDetailView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C030525DB5AECF841701DBB6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4E04EB222F78023704256286 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 12D2E54F06E66ECAAC8330D3;
+			remoteInfo = Spectre;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0A34BA918D60570DF013927E /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		0C2DF22F7C15CDFCBB0C8496 /* SecurityAuditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityAuditView.swift; sourceTree = "<group>"; };
+		1034095299F663B91AD7541F /* EngineCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineCoding.swift; sourceTree = "<group>"; };
+		13DEA8C1AD56512EEDAEB6BE /* BreachIntelligenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreachIntelligenceView.swift; sourceTree = "<group>"; };
+		2B19B877573242616F349E6C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2B569D89A64CDB19752A7994 /* InvestigationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestigationViewModel.swift; sourceTree = "<group>"; };
+		422BC4A317B2AC4BE1575F05 /* RustEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustEngine.swift; sourceTree = "<group>"; };
+		4895C8EF6D645B7277BD5C55 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
+		5818CE09D4C7F6DC13A6D392 /* ReportGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportGenerator.swift; sourceTree = "<group>"; };
+		59D22F1CF526D4B56E56B94A /* InvestigationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestigationDetailView.swift; sourceTree = "<group>"; };
+		603BA6A4412A3DED5E39C2BE /* GraphLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphLayout.swift; sourceTree = "<group>"; };
+		6960C041F691485D1491BD6E /* FindingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindingViews.swift; sourceTree = "<group>"; };
+		7031E6408DBD427E71B09128 /* NewInvestigationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewInvestigationView.swift; sourceTree = "<group>"; };
+		7A9CA02256ECC0DAF85CDC96 /* Spectre.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Spectre.entitlements; sourceTree = "<group>"; };
+		7C03FA3722789DFAD8277EDB /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
+		84D2987A43BE4647C2FC408E /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
+		89DF01A8D665F7FB42CF71FB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		9A9F79954581BF731C008591 /* IdentityGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityGraphView.swift; sourceTree = "<group>"; };
+		9BD7BC78130B999155B47E3B /* IdentitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentitiesView.swift; sourceTree = "<group>"; };
+		9BE973542179A60F58E64B74 /* EngineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineModels.swift; sourceTree = "<group>"; };
+		A2A4704B815200AE516A3AFB /* EngineClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineClient.swift; sourceTree = "<group>"; };
+		B054811EBC52DCC72C264D0E /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
+		BEB704AA77A24D8AF2178C9E /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C80FBDF7DDB763951862DBB8 /* RustEngineIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RustEngineIntegrationTests.swift; sourceTree = "<group>"; };
+		D240F47D0E5AA9E0950E324C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D2CBD7D0284379BB705BC2A8 /* AppLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLog.swift; sourceTree = "<group>"; };
+		DD534DD00AD56BD43E4749BB /* SupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportTests.swift; sourceTree = "<group>"; };
+		DF19EA57094949D63C12A4DF /* SpectreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SpectreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EC66BA8DC7126FCF50CCE055 /* Badges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Badges.swift; sourceTree = "<group>"; };
+		F0F004952348598F8711CF81 /* Spectre.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Spectre.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F82A632751FAC1F5BA74C316 /* InvestigationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestigationViewModelTests.swift; sourceTree = "<group>"; };
+		FA02F4D601BDADBC55776164 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		FBCA713FCDC6327C7C7B594D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		FBE91D881EFA6621F9FD845F /* InvestigationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestigationsView.swift; sourceTree = "<group>"; };
+		FE145F16F1DE0B375F229B9E /* SpectreApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectreApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0184EB5C3A9AFEC32DB2DB97 /* SecurityAudit */ = {
+			isa = PBXGroup;
+			children = (
+				0C2DF22F7C15CDFCBB0C8496 /* SecurityAuditView.swift */,
+			);
+			path = SecurityAudit;
+			sourceTree = "<group>";
+		};
+		17D34984C54B66FA9A95B277 /* Investigations */ = {
+			isa = PBXGroup;
+			children = (
+				59D22F1CF526D4B56E56B94A /* InvestigationDetailView.swift */,
+				FBE91D881EFA6621F9FD845F /* InvestigationsView.swift */,
+				2B569D89A64CDB19752A7994 /* InvestigationViewModel.swift */,
+				7031E6408DBD427E71B09128 /* NewInvestigationView.swift */,
+			);
+			path = Investigations;
+			sourceTree = "<group>";
+		};
+		181D702CFED8AD681AA3A661 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				9BE973542179A60F58E64B74 /* EngineModels.swift */,
+				84D2987A43BE4647C2FC408E /* PreviewData.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		579EBD4BA0E6FEC55CD00C13 /* Identities */ = {
+			isa = PBXGroup;
+			children = (
+				603BA6A4412A3DED5E39C2BE /* GraphLayout.swift */,
+				9BD7BC78130B999155B47E3B /* IdentitiesView.swift */,
+				9A9F79954581BF731C008591 /* IdentityGraphView.swift */,
+			);
+			path = Identities;
+			sourceTree = "<group>";
+		};
+		644D1B8DFDE3B2E4E469B4E8 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				0A34BA918D60570DF013927E /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		659148DBB8617FF0AE5DD09B /* Discovery */ = {
+			isa = PBXGroup;
+			children = (
+				6960C041F691485D1491BD6E /* FindingViews.swift */,
+				B054811EBC52DCC72C264D0E /* InspectorView.swift */,
+			);
+			path = Discovery;
+			sourceTree = "<group>";
+		};
+		6F871CA74C857BCF980D3FEB /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				89DF01A8D665F7FB42CF71FB /* Theme.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		71EC7A974FF9641AD4E39C83 /* Breaches */ = {
+			isa = PBXGroup;
+			children = (
+				13DEA8C1AD56512EEDAEB6BE /* BreachIntelligenceView.swift */,
+			);
+			path = Breaches;
+			sourceTree = "<group>";
+		};
+		8F04CC14604B8360257F2E9E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F0F004952348598F8711CF81 /* Spectre.app */,
+				DF19EA57094949D63C12A4DF /* SpectreTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A042381145B91B965AE19992 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2B19B877573242616F349E6C /* Assets.xcassets */,
+				7A9CA02256ECC0DAF85CDC96 /* Spectre.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A5B6D3B4B9746574E83002CC = {
+			isa = PBXGroup;
+			children = (
+				FEE94AB07F1231BF309D2D46 /* Spectre */,
+				F24BBB708A48528B918D4F73 /* SpectreTests */,
+				8F04CC14604B8360257F2E9E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B8C1246C661A9BEF9FA2EFFC /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				D240F47D0E5AA9E0950E324C /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		CB2B91739E5F675B7E8019E6 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D2CBD7D0284379BB705BC2A8 /* AppLog.swift */,
+				A2A4704B815200AE516A3AFB /* EngineClient.swift */,
+				1034095299F663B91AD7541F /* EngineCoding.swift */,
+				FBCA713FCDC6327C7C7B594D /* KeychainStore.swift */,
+				5818CE09D4C7F6DC13A6D392 /* ReportGenerator.swift */,
+				422BC4A317B2AC4BE1575F05 /* RustEngine.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		CFCF2D5A7A63A315BDD40BCE /* Reports */ = {
+			isa = PBXGroup;
+			children = (
+				4895C8EF6D645B7277BD5C55 /* ReportsView.swift */,
+			);
+			path = Reports;
+			sourceTree = "<group>";
+		};
+		D7F7D3AD97F7722E8425E338 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				BEB704AA77A24D8AF2178C9E /* AppModel.swift */,
+				FA02F4D601BDADBC55776164 /* RootView.swift */,
+				FE145F16F1DE0B375F229B9E /* SpectreApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		DAB2E1191964E2974A11CBB1 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				71EC7A974FF9641AD4E39C83 /* Breaches */,
+				644D1B8DFDE3B2E4E469B4E8 /* Dashboard */,
+				659148DBB8617FF0AE5DD09B /* Discovery */,
+				579EBD4BA0E6FEC55CD00C13 /* Identities */,
+				17D34984C54B66FA9A95B277 /* Investigations */,
+				CFCF2D5A7A63A315BDD40BCE /* Reports */,
+				0184EB5C3A9AFEC32DB2DB97 /* SecurityAudit */,
+				B8C1246C661A9BEF9FA2EFFC /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		E024A86808EA4384C5A9BC02 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				EC66BA8DC7126FCF50CCE055 /* Badges.swift */,
+				7C03FA3722789DFAD8277EDB /* Card.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		F24BBB708A48528B918D4F73 /* SpectreTests */ = {
+			isa = PBXGroup;
+			children = (
+				F82A632751FAC1F5BA74C316 /* InvestigationViewModelTests.swift */,
+				C80FBDF7DDB763951862DBB8 /* RustEngineIntegrationTests.swift */,
+				DD534DD00AD56BD43E4749BB /* SupportTests.swift */,
+			);
+			path = SpectreTests;
+			sourceTree = "<group>";
+		};
+		FEE94AB07F1231BF309D2D46 /* Spectre */ = {
+			isa = PBXGroup;
+			children = (
+				D7F7D3AD97F7722E8425E338 /* App */,
+				E024A86808EA4384C5A9BC02 /* Components */,
+				6F871CA74C857BCF980D3FEB /* DesignSystem */,
+				DAB2E1191964E2974A11CBB1 /* Features */,
+				181D702CFED8AD681AA3A661 /* Models */,
+				A042381145B91B965AE19992 /* Resources */,
+				CB2B91739E5F675B7E8019E6 /* Services */,
+			);
+			path = Spectre;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		12D2E54F06E66ECAAC8330D3 /* Spectre */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A8B73FDCCF460D0FFC2EE72A /* Build configuration list for PBXNativeTarget "Spectre" */;
+			buildPhases = (
+				C3FEE7FB535E6FE771027051 /* Build Rust engine */,
+				9E827D3C994407C9AEB458B3 /* Sources */,
+				FFAAD6DCF650A63E7518421C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Spectre;
+			packageProductDependencies = (
+			);
+			productName = Spectre;
+			productReference = F0F004952348598F8711CF81 /* Spectre.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CF61F88F6B80EAB97265EDF2 /* SpectreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 395427B695D6F1097F031940 /* Build configuration list for PBXNativeTarget "SpectreTests" */;
+			buildPhases = (
+				224BF9102EBC09BD281C419B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB2442D04304FA132BC1F1B4 /* PBXTargetDependency */,
+			);
+			name = SpectreTests;
+			packageProductDependencies = (
+			);
+			productName = SpectreTests;
+			productReference = DF19EA57094949D63C12A4DF /* SpectreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4E04EB222F78023704256286 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					12D2E54F06E66ECAAC8330D3 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = D8E6C159016ABB7E90FA7605 /* Build configuration list for PBXProject "Spectre" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A5B6D3B4B9746574E83002CC;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8F04CC14604B8360257F2E9E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				12D2E54F06E66ECAAC8330D3 /* Spectre */,
+				CF61F88F6B80EAB97265EDF2 /* SpectreTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FFAAD6DCF650A63E7518421C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F50EDF36586009F531FE6AFC /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C3FEE7FB535E6FE771027051 /* Build Rust engine */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust engine";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$SRCROOT/../scripts/build-rust-xcode.sh\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		224BF9102EBC09BD281C419B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				933E08A2C2B6F435A2FE1D44 /* InvestigationViewModelTests.swift in Sources */,
+				A9F05F76B23371FB99D18219 /* RustEngineIntegrationTests.swift in Sources */,
+				4A8EFAB32AD7D400C99ECD00 /* SupportTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E827D3C994407C9AEB458B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AEBE4DD18C78E802674858DA /* AppLog.swift in Sources */,
+				6F541E61B84DCF732F68BB70 /* AppModel.swift in Sources */,
+				5E4989009B213A77D59E9E7A /* Badges.swift in Sources */,
+				806F42496C1B68741D3885D9 /* BreachIntelligenceView.swift in Sources */,
+				F6962891C662410433069C04 /* Card.swift in Sources */,
+				C5CE40099701F60047BA318C /* DashboardView.swift in Sources */,
+				BE2E3CF4640AD8A968DFCE2D /* EngineClient.swift in Sources */,
+				33228CD5039D323894B3DC53 /* EngineCoding.swift in Sources */,
+				4092D9B9BD76C804E6619073 /* EngineModels.swift in Sources */,
+				E1D35645C1732CB6739A374D /* FindingViews.swift in Sources */,
+				38FB4C67258BFE411BADB233 /* GraphLayout.swift in Sources */,
+				911813408E324867E4299F1C /* IdentitiesView.swift in Sources */,
+				F920513B08E519DA1166D817 /* IdentityGraphView.swift in Sources */,
+				5578A377C4CD49FB58A3789E /* InspectorView.swift in Sources */,
+				FEA698F1A0322D34E9CD0147 /* InvestigationDetailView.swift in Sources */,
+				901E109D679D04C82FD788C3 /* InvestigationViewModel.swift in Sources */,
+				7F42F10DFD3B28591D79BA42 /* InvestigationsView.swift in Sources */,
+				48E15644B756DC41C9338E08 /* KeychainStore.swift in Sources */,
+				EA00D0AB6B39CDD16EA8708C /* NewInvestigationView.swift in Sources */,
+				C64EFAB437F72A13D4EBA8A3 /* PreviewData.swift in Sources */,
+				569F569B072618222520ED32 /* ReportGenerator.swift in Sources */,
+				30A6D95D179016F417DF8F30 /* ReportsView.swift in Sources */,
+				8F7B139621A0FBFB22F8011F /* RootView.swift in Sources */,
+				2A312BCC2841262AE32E40A8 /* RustEngine.swift in Sources */,
+				612E384CC136D3F16414F884 /* SecurityAuditView.swift in Sources */,
+				7BEC2CEC215EC8CF698784EC /* SettingsView.swift in Sources */,
+				2F9B5BDEE55DACFAE1350585 /* SpectreApp.swift in Sources */,
+				F5141E3A907C31777AC513A0 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CB2442D04304FA132BC1F1B4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 12D2E54F06E66ECAAC8330D3 /* Spectre */;
+			targetProxy = C030525DB5AECF841701DBB6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0B972D3AF41DED7C30FED1B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Spectre/Resources/Spectre.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Spectre;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Portseif. Authorized investigations only.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../rust/target/xcode/$(CONFIGURATION)";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-lspectre_ffi -framework Security -framework CoreFoundation -liconv";
+				PRODUCT_BUNDLE_IDENTIFIER = io.portseif.Spectre;
+				PRODUCT_NAME = Spectre;
+				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../rust/crates/spectre-ffi/include";
+			};
+			name = Debug;
+		};
+		15FB4DBD4693C96CE5A78BC3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.portseif.SpectreTests;
+				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../rust/crates/spectre-ffi/include";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Spectre.app/Contents/MacOS/Spectre";
+			};
+			name = Debug;
+		};
+		161664C0F70F7F886A2F5F3B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Spectre/Resources/Spectre.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Spectre;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Portseif. Authorized investigations only.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../rust/target/xcode/$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-lspectre_ffi -framework Security -framework CoreFoundation -liconv";
+				PRODUCT_BUNDLE_IDENTIFIER = io.portseif.Spectre;
+				PRODUCT_NAME = Spectre;
+				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../rust/crates/spectre-ffi/include";
+			};
+			name = Release;
+		};
+		7671553CE9DA2F033D9161A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		9F90BC77917B9D374DD5C6D1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		B6AB720BDDA62FA6F01B12BD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.portseif.SpectreTests;
+				SDKROOT = macosx;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../rust/crates/spectre-ffi/include";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Spectre.app/Contents/MacOS/Spectre";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		395427B695D6F1097F031940 /* Build configuration list for PBXNativeTarget "SpectreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				15FB4DBD4693C96CE5A78BC3 /* Debug */,
+				B6AB720BDDA62FA6F01B12BD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A8B73FDCCF460D0FFC2EE72A /* Build configuration list for PBXNativeTarget "Spectre" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B972D3AF41DED7C30FED1B9 /* Debug */,
+				161664C0F70F7F886A2F5F3B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D8E6C159016ABB7E90FA7605 /* Build configuration list for PBXProject "Spectre" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7671553CE9DA2F033D9161A9 /* Debug */,
+				9F90BC77917B9D374DD5C6D1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4E04EB222F78023704256286 /* Project object */;
+}

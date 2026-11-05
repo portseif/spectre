@@ -1,0 +1,26 @@
+[package]
+name = "spectre-audit"
+description = "Password security auditing: Pwned Passwords k-anonymity and hash-format inventory."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+spectre-core = { workspace = true }
+serde = { workspace = true }
+sha1 = { workspace = true }
+hex = { workspace = true }
+zeroize = { workspace = true }
+url = { workspace = true }
+tokio-util = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+wiremock = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,35 @@
+name: Swift
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: macOS build · tests · analyze
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Regenerate project for this runner's Xcode
+        working-directory: macos
+        run: xcodegen generate
+      - name: Build and test
+        working-directory: macos
+        run: |
+          xcodebuild -project Spectre.xcodeproj -scheme Spectre -configuration Debug \
+            -derivedDataPath ../build/DerivedData CODE_SIGN_IDENTITY=- test
+      - name: Static analysis
+        working-directory: macos
+        run: |
+          xcodebuild -project Spectre.xcodeproj -scheme Spectre -configuration Debug \
+            -derivedDataPath ../build/DerivedData CODE_SIGN_IDENTITY=- analyze

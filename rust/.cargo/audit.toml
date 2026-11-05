@@ -1,0 +1,8 @@
+# Reviewed exceptions for `cargo audit` (re-review when dependencies change).
+[advisories]
+ignore = [
+    # rsa (Marvin attack). Listed in Cargo.lock only through sqlx's optional
+    # MySQL driver, which is never compiled: Spectre enables SQLite only.
+    # Verified with `cargo tree -i rsa --target all -e all` (no path).
+    "RUSTSEC-2023-0071",
+]

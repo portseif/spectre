@@ -1,0 +1,5 @@
+module SpectreFFI {
+    header "spectre_ffi.h"
+    link "spectre_ffi"
+    export *
+}

@@ -1,0 +1,37 @@
+[package]
+name = "spectre-discovery"
+description = "Investigation engine: orchestration, streaming, cancellation, and the JSON API."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+spectre-core = { workspace = true }
+spectre-providers = { workspace = true }
+spectre-correlation = { workspace = true }
+spectre-breach = { workspace = true }
+spectre-audit = { workspace = true }
+spectre-storage = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+zeroize = { workspace = true }
+rand = { workspace = true }
+hex = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = { workspace = true }
+wiremock = { workspace = true }
+
+[lints]
+workspace = true
