@@ -14,16 +14,33 @@ enum AppearancePreference: String, CaseIterable, Identifiable {
     }
 }
 
+private enum SettingsSection: String, CaseIterable, Identifiable {
+    case general, providers, performance, privacy, advanced
+    var id: String { rawValue }
+    var label: String { rawValue.capitalized }
+}
+
 struct SettingsView: View {
+    @State private var section: SettingsSection = .general
+
     var body: some View {
-        TabView {
-            Tab("General", systemImage: "gearshape") { GeneralSettings() }
-            Tab("Providers", systemImage: "server.rack") { ProviderSettings() }
-            Tab("Performance", systemImage: "speedometer") { PerformanceSettings() }
-            Tab("Privacy", systemImage: "hand.raised") { PrivacySettings() }
-            Tab("Advanced", systemImage: "wrench.and.screwdriver") { AdvancedSettings() }
+        Form {
+            Section {
+                Picker("Settings section", selection: $section) {
+                    ForEach(SettingsSection.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            switch section {
+            case .general: GeneralSettings()
+            case .providers: ProviderSettings()
+            case .performance: PerformanceSettings()
+            case .privacy: PrivacySettings()
+            case .advanced: AdvancedSettings()
+            }
         }
-        .scenePadding()
+        .formStyle(.grouped)
         .navigationTitle("Settings")
     }
 }
@@ -35,12 +52,14 @@ private struct GeneralSettings: View {
     @AppStorage("defaultTargetType") private var defaultTargetType: TargetType = .username
 
     var body: some View {
-        Form {
-            Picker("Appearance", selection: $appearance) {
-                ForEach(AppearancePreference.allCases) { Text($0.label).tag($0) }
-            }
-            Picker("Default search type", selection: $defaultTargetType) {
-                ForEach(TargetType.allCases) { Label($0.label, systemImage: $0.symbol).tag($0) }
+        Group {
+            Section {
+                Picker("Appearance", selection: $appearance) {
+                    ForEach(AppearancePreference.allCases) { Text($0.label).tag($0) }
+                }
+                Picker("Default search type", selection: $defaultTargetType) {
+                    ForEach(TargetType.allCases) { Label($0.label, systemImage: $0.symbol).tag($0) }
+                }
             }
             Section("Investigation storage") {
                 LabeledContent("Database") {
@@ -57,7 +76,6 @@ private struct GeneralSettings: View {
                     .foregroundStyle(.spectreSecondary)
             }
         }
-        .formStyle(.grouped)
     }
 }
 
@@ -69,7 +87,7 @@ private struct ProviderSettings: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        Form {
+        Group {
             Section {
                 ForEach(CredentialID.allCases) { credential in
                     CredentialEditor(credential: credential, isConfigured: isConfigured(credential)) { secret in
@@ -113,7 +131,6 @@ private struct ProviderSettings: View {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)
             }
         }
-        .formStyle(.grouped)
         .task { await reload() }
     }
 
@@ -215,7 +232,7 @@ private struct PerformanceSettings: View {
     @State private var message: String?
 
     var body: some View {
-        Form {
+        Group {
             Section {
                 Stepper("Maximum concurrency: \(settings.maxConcurrency)", value: $settings.maxConcurrency, in: 1...32)
                 Stepper("Request timeout: \(settings.requestTimeoutSecs) s", value: $settings.requestTimeoutSecs, in: 2...120)
@@ -243,7 +260,6 @@ private struct PerformanceSettings: View {
                     .disabled(settings == saved)
             }
         }
-        .formStyle(.grouped)
         .task { await load() }
     }
 
@@ -275,7 +291,7 @@ private struct PrivacySettings: View {
     @State private var message: String?
 
     var body: some View {
-        Form {
+        Group {
             Section {
                 Picker("Keep investigations", selection: $settings.retentionDays) {
                     Text("Forever").tag(UInt32(0))
@@ -308,7 +324,6 @@ private struct PrivacySettings: View {
             .font(.callout)
             if let message { Text(message).font(.caption).foregroundStyle(.spectreSecondary) }
         }
-        .formStyle(.grouped)
         .task {
             if let engine = model.engine, let current = try? await engine.settings() { settings = current }
         }
@@ -356,7 +371,7 @@ private struct AdvancedSettings: View {
     @State private var confirmRestore: URL?
 
     var body: some View {
-        Form {
+        Group {
             Section("Rust engine diagnostics") {
                 if let diagnostics {
                     KeyValueRow(label: "Engine version", value: diagnostics.engineVersion)
@@ -403,7 +418,6 @@ private struct AdvancedSettings: View {
                 }
             }
         }
-        .formStyle(.grouped)
         .task(id: developerMode) { await refresh() }
         .fileExporter(isPresented: $isBackingUp, document: ExportDocument(data: Data(), contentType: .data, filename: "spectre-backup.sqlite"), contentType: .data, defaultFilename: "spectre-backup.sqlite") { result in
             // The engine writes the snapshot itself (VACUUM INTO); the empty placeholder is replaced.
