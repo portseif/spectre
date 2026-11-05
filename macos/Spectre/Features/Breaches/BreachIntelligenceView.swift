@@ -265,6 +265,9 @@ struct BreachReportContent: View {
                     Text(report.sourceAttribution).font(.caption2).foregroundStyle(.spectreSecondary)
                 }
             }
+            if report.breaches.contains(where: \.isStealerLog) {
+                StealerLogBanner()
+            }
             if !report.breaches.isEmpty {
                 Card {
                     VStack(alignment: .leading, spacing: 10) {
@@ -303,6 +306,7 @@ struct BreachReportContent: View {
                     ForEach(report.risk.recommendations, id: \.self) { Label($0, systemImage: "checkmark.circle").font(.callout) }
                 }
             }
+            PasswordReuseCheck(passwordDataExposed: report.breaches.contains(where: \.passwordDataExposed))
             ForEach(report.breaches) { breach in
                 Card {
                     VStack(alignment: .leading, spacing: 8) {
@@ -315,6 +319,85 @@ struct BreachReportContent: View {
                     }
                 }
             }
+        }
+    }
+}
+
+/// Highlights that a breach is a stealer log (malware on a device), which is
+/// a different and usually more urgent signal than a service-side breach.
+private struct StealerLogBanner: View {
+    var body: some View {
+        Card {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "ladybug.fill")
+                    .font(.title2)
+                    .foregroundStyle(Theme.danger)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Found in a stealer log").font(.headline)
+                    Text("At least one source is an infostealer log, which means credentials were taken from a compromised device rather than a company's servers. Scan the devices you use for malware before rotating anything, or new passwords get captured too.")
+                        .font(.callout)
+                        .foregroundStyle(.spectreSecondary)
+                }
+            }
+        }
+    }
+}
+
+/// Proof-of-compromise for a specific password, without ever displaying one.
+/// The address owner enters a password they use for this account and the
+/// k-anonymity check confirms whether that exact string is in a breach corpus.
+private struct PasswordReuseCheck: View {
+    @Environment(AppModel.self) private var model
+    let passwordDataExposed: Bool
+    @State private var password = ""
+    @State private var result: PasswordCheckResult?
+    @State private var isChecking = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: "Confirm a password for this account", symbol: "key.viewfinder")
+                Text(passwordDataExposed
+                    ? "A breach here exposed password data. Enter a password you use for this account to prove whether that exact password is burned. Only the first 5 characters of its SHA-1 hash leave this Mac; the password is never displayed, stored, or sent."
+                    : "Enter a password you use for this account to check it against Pwned Passwords. Only the first 5 characters of its SHA-1 hash leave this Mac; the password is never displayed, stored, or sent.")
+                    .font(.callout)
+                    .foregroundStyle(.spectreSecondary)
+                HStack {
+                    SecureField("Password to check", text: $password)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit(check)
+                    Button(action: check) {
+                        if isChecking { ProgressView().controlSize(.small) } else { Text("Check") }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.accent)
+                    .disabled(password.isEmpty || isChecking)
+                }
+                if let errorMessage {
+                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)
+                }
+                if let result {
+                    PasswordResultView(compromised: result.compromised, occurrences: result.occurrences, recommendation: result.recommendation, rangeSize: result.rangeSize)
+                }
+            }
+        }
+    }
+
+    private func check() {
+        guard let engine = model.engine, !password.isEmpty else { return }
+        let candidate = password
+        password = ""
+        isChecking = true
+        errorMessage = nil
+        Task {
+            do {
+                result = try await engine.checkPassword(candidate)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isChecking = false
         }
     }
 }

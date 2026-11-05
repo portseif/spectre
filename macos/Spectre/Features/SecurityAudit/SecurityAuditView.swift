@@ -67,7 +67,7 @@ private struct PasswordCheckPanel: View {
     }
 }
 
-private struct PasswordResultView: View {
+struct PasswordResultView: View {
     let compromised: Bool
     let occurrences: UInt64
     let recommendation: String
